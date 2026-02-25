@@ -15,12 +15,13 @@ const generateAgreementPDF = (agreement: AgreementData): string | null => {
     
     doc.setFontSize(12);
     doc.text(`DBO Name: ${agreement.dboName || 'N/A'}`, 20, 40);
-    doc.text(`Permit No: ${agreement.permitNo || 'N/A'}`, 20, 50);
-    doc.text(`County: ${agreement.county || 'N/A'}`, 20, 60);
-    doc.text(`Total Arrears: KES ${(agreement.totalArrears || 0).toLocaleString()}`, 20, 70);
+    doc.text(`Premise Name: ${agreement.premiseName || 'N/A'}`, 20, 50);
+    doc.text(`Permit No: ${agreement.permitNo || 'N/A'}`, 20, 60);
+    doc.text(`County: ${agreement.county || 'N/A'}`, 20, 70);
+    doc.text(`Total Arrears: KES ${(agreement.totalArrears || 0).toLocaleString()}`, 20, 80);
     
-    doc.text("Payment Schedule:", 20, 90);
-    let y = 100;
+    doc.text("Payment Schedule:", 20, 100);
+    let y = 110;
     if (agreement.installments && Array.isArray(agreement.installments)) {
       agreement.installments.forEach((inst) => {
         doc.text(`${inst.no}. ${inst.period} - Due: ${inst.dueDate || 'TBD'} - Amount: KES ${(inst.amount || 0).toLocaleString()}`, 25, y);

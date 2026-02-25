@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AgreementData, DebtorRecord, ArrearItem, Installment, StaffConfig, KDB_ADMIN_EMAIL } from '../types.ts';
-import { Eye, Plus, Trash2, Database, FileCheck, UserPlus, MapPin, ShieldCheck, AlertTriangle, Send, Settings, Upload, CheckCircle2, Briefcase, FileText, FileSearch, Mail, Calendar, Check, Loader2, Search, X, Download, Server, Cpu, Globe, Key, Lock, Activity, AlertCircle, ExternalLink } from 'lucide-react';
+import { Eye, Plus, Trash2, Database, FileCheck, UserPlus, MapPin, ShieldCheck, AlertTriangle, Send, Settings, Upload, CheckCircle2, Briefcase, FileText, FileSearch, Mail, Calendar, Check, Loader2, Search, X, Download, Server, Cpu, Globe, Key, Lock, Activity, AlertCircle, ExternalLink, PenTool } from 'lucide-react';
 import { PDFPreview } from './PDFPreview.tsx';
 
 interface AdminDashboardProps {
@@ -24,16 +24,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
   const [adminName, setAdminName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddingDebtor, setIsAddingDebtor] = useState(false);
+  const [editingDebtorId, setEditingDebtorId] = useState<string | null>(null);
   const [newDebtor, setNewDebtor] = useState<Partial<DebtorRecord>>({
     dboName: '',
+    premiseName: '',
     permitNo: '',
     county: '',
+    location: '',
     totalArrears: 0,
     tel: '',
     debitNoteNo: '',
     arrearsBreakdown: [],
-    installments: []
+    installments: [{ no: 1, period: '', dueDate: '', amount: 0 }]
   });
+
+  const addInstallmentRow = () => {
+    const current = newDebtor.installments || [];
+    setNewDebtor({
+      ...newDebtor,
+      installments: [
+        ...current,
+        { no: current.length + 1, period: '', dueDate: '', amount: 0 }
+      ]
+    });
+  };
+
+  const removeInstallmentRow = (index: number) => {
+    const current = [...(newDebtor.installments || [])];
+    current.splice(index, 1);
+    // Re-number
+    const renumbered = current.map((inst, i) => ({ ...inst, no: i + 1 }));
+    setNewDebtor({ ...newDebtor, installments: renumbered });
+  };
+
+  const updateInstallmentRow = (index: number, field: keyof Installment, value: any) => {
+    const current = [...(newDebtor.installments || [])];
+    current[index] = { ...current[index], [field]: value };
+    setNewDebtor({ ...newDebtor, installments: current });
+  };
   
   const envCheck = {
     supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
@@ -89,27 +117,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
     if (!newDebtor.dboName || !newDebtor.permitNo || !newDebtor.totalArrears) {
       return alert("Please fill in all required fields.");
     }
-    const id = `D${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
-    const debtor: DebtorRecord = {
-      ...(newDebtor as DebtorRecord),
-      id,
-      arrearsBreakdown: [{ id: '1', month: 'Current', amount: newDebtor.totalArrears || 0 }],
-      totalArrearsWords: 'Amount specified in ledger',
-      arrearsPeriod: 'Current',
-      installments: [{ no: 1, period: 'Current', dueDate: '', amount: newDebtor.totalArrears || 0 }]
-    };
-    onDebtorUpdate([...debtors, debtor]);
+
+    const finalInstallments = newDebtor.installments || [];
+    const totalFromInst = finalInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
+    const totalArrears = totalFromInst || newDebtor.totalArrears || 0;
+    
+    const arrearsPeriod = finalInstallments.map(i => i.period).filter(Boolean).join(', ') || 'Current';
+
+    if (editingDebtorId) {
+      const updatedDebtors = debtors.map(d => d.id === editingDebtorId ? {
+        ...(newDebtor as DebtorRecord),
+        id: editingDebtorId,
+        totalArrears,
+        installments: finalInstallments,
+        arrearsPeriod
+      } : d);
+      onDebtorUpdate(updatedDebtors);
+    } else {
+      const id = `D${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+      const debtor: DebtorRecord = {
+        ...(newDebtor as DebtorRecord),
+        id,
+        totalArrears,
+        arrearsBreakdown: finalInstallments.map((inst, i) => ({ id: String(i), month: inst.period, amount: inst.amount })),
+        totalArrearsWords: 'Amount specified in ledger',
+        arrearsPeriod,
+        installments: finalInstallments
+      };
+      onDebtorUpdate([...debtors, debtor]);
+    }
+
     setIsAddingDebtor(false);
+    setEditingDebtorId(null);
     setNewDebtor({
       dboName: '',
+      premiseName: '',
       permitNo: '',
       county: '',
+      location: '',
       totalArrears: 0,
       tel: '',
       debitNoteNo: '',
       arrearsBreakdown: [],
-      installments: []
+      installments: [{ no: 1, period: '', dueDate: '', amount: 0 }]
     });
+  };
+
+  const handleEditDebtor = (debtor: DebtorRecord) => {
+    setEditingDebtorId(debtor.id);
+    setNewDebtor(debtor);
+    setIsAddingDebtor(true);
   };
 
   return (
@@ -120,15 +177,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
 
       {isAddingDebtor && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-2xl w-full space-y-6 animate-in zoom-in-95">
+          <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-2xl w-full space-y-6 animate-in zoom-in-95 overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Add New Ledger Entry</h3>
-              <button onClick={() => setIsAddingDebtor(false)} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">{editingDebtorId ? 'Edit Ledger Entry' : 'Add New Ledger Entry'}</h3>
+              <button onClick={() => { setIsAddingDebtor(false); setEditingDebtorId(null); }} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">DBO Name</label>
                 <input value={newDebtor.dboName} onChange={e => setNewDebtor({...newDebtor, dboName: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="e.g. Sunrise Dairy" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Premise Name</label>
+                <input value={newDebtor.premiseName} onChange={e => setNewDebtor({...newDebtor, premiseName: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="e.g. Sunrise Depot" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Permit No</label>
@@ -139,7 +200,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                 <input value={newDebtor.county} onChange={e => setNewDebtor({...newDebtor, county: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="e.g. Kericho" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Arrears Amount</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Location</label>
+                <input value={newDebtor.location} onChange={e => setNewDebtor({...newDebtor, location: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="e.g. Thika Rd" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Total Arrears Amount</label>
                 <input type="number" value={newDebtor.totalArrears} onChange={e => setNewDebtor({...newDebtor, totalArrears: Number(e.target.value)})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="0.00" />
               </div>
               <div className="space-y-1">
@@ -150,8 +215,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Debit Note No (Alt Secret)</label>
                 <input value={newDebtor.debitNoteNo} onChange={e => setNewDebtor({...newDebtor, debitNoteNo: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-xl font-bold text-sm" placeholder="DN/..." />
               </div>
+              <div className="md:col-span-2 border-t pt-4 mt-2">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-xs font-black text-slate-800 uppercase">Installment Configuration</h4>
+                  <button onClick={addInstallmentRow} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase flex items-center">
+                    <Plus className="w-3 h-3 mr-1" /> Add Installment
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {newDebtor.installments?.map((inst, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <div className="md:col-span-1">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">No.</label>
+                        <div className="text-xs font-bold text-slate-600 px-2">{inst.no}</div>
+                      </div>
+                      <div className="md:col-span-6">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">CSL Period (e.g. Jan 2024)</label>
+                        <input value={inst.period} onChange={e => updateInstallmentRow(idx, 'period', e.target.value)} className="w-full px-3 py-2 bg-white border rounded-lg font-bold text-xs" placeholder="Jan 2024" />
+                      </div>
+                      <div className="md:col-span-4">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Amount (KES)</label>
+                        <input type="number" value={inst.amount} onChange={e => updateInstallmentRow(idx, 'amount', Number(e.target.value))} className="w-full px-3 py-2 bg-white border rounded-lg font-bold text-xs" placeholder="0.00" />
+                      </div>
+                      <div className="md:col-span-1 flex justify-end">
+                        <button onClick={() => removeInstallmentRow(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <button onClick={handleAddDebtor} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs">Save to Ledger</button>
+            <button onClick={handleAddDebtor} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs">
+              {editingDebtorId ? 'Update Ledger Entry' : 'Save to Ledger'}
+            </button>
           </div>
         </div>
       )}
@@ -398,12 +496,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                                 <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-8 py-6">
                                         <div className="font-black text-slate-800">{d.dboName}</div>
+                                        <div className="text-[10px] text-slate-500 font-bold uppercase mt-0.5 tracking-tight">{d.premiseName}</div>
                                         <div className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{d.county}</div>
                                     </td>
                                     <td className="px-8 py-6 font-mono text-xs font-bold text-slate-500">{d.permitNo}</td>
                                     <td className="px-8 py-6 text-right font-black text-emerald-600 text-lg">KES {d.totalArrears.toLocaleString()}</td>
                                     <td className="px-8 py-6 text-center">
-                                        <button onClick={() => onDebtorUpdate(debtors.filter(item => item.id !== d.id))} className="p-2 text-slate-300 hover:text-rose-600 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                                        <div className="flex items-center justify-center space-x-2">
+                                          <button onClick={() => handleEditDebtor(d)} className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"><PenTool className="w-4 h-4" /></button>
+                                          <button onClick={() => onDebtorUpdate(debtors.filter(item => item.id !== d.id))} className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

@@ -122,7 +122,7 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-3xl mx-auto px-4 py-12">
       {isSubmitting && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] flex items-center justify-center p-8">
           <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in-95">
@@ -166,7 +166,22 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
               <div className="flex items-center space-x-2 text-emerald-600 font-black uppercase tracking-widest text-xs"><MapPin className="w-4 h-4" /><span>Business Information Verification</span></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="md:col-span-2 p-6 bg-slate-50 rounded-3xl border flex justify-between items-center"><div className="space-y-1"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Operating DBO</label><div className="text-lg font-black text-slate-800">{selectedDebtor?.dboName}</div></div><div className="text-right space-y-1"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">County</label><div className="text-lg font-black text-slate-800">{selectedDebtor?.county}</div></div></div>
+                <div className="md:col-span-2 p-6 bg-slate-50 rounded-3xl border space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Operating DBO</label>
+                      <div className="text-lg font-black text-slate-800">{selectedDebtor?.dboName}</div>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">County</label>
+                      <div className="text-lg font-black text-slate-800">{selectedDebtor?.county}</div>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-slate-200">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Premise Name</label>
+                    <div className="text-sm font-bold text-slate-600">{selectedDebtor?.premiseName}</div>
+                  </div>
+                </div>
                 <div className="space-y-1.5"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Premise Physical Location *</label><input required value={formData.location || ''} onChange={e => updateField('location', e.target.value)} className="w-full px-5 py-3 rounded-2xl border bg-white focus:ring-4 focus:ring-emerald-500/5 font-bold outline-none" placeholder="e.g. Plot 42, Kisumu Rd" /></div>
                 <div className="space-y-1.5"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Signatory Contact Email *</label><input required type="email" value={formData.clientEmail || ''} onChange={e => updateField('clientEmail', e.target.value)} className="w-full px-5 py-3 rounded-2xl border bg-white focus:ring-4 focus:ring-emerald-500/5 font-bold outline-none" placeholder="manager@business.com" /></div>
                 <div className="md:col-span-2 space-y-1.5"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Authorized Phone No *</label><input required value={formData.tel || ''} onChange={e => updateField('tel', e.target.value)} className="w-full px-5 py-3 rounded-2xl border bg-white focus:ring-4 focus:ring-emerald-500/5 font-bold outline-none" placeholder="0712 345 678" /></div>
@@ -181,6 +196,9 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
                 <div className="absolute top-0 right-0 p-10 opacity-5"><CreditCard className="w-48 h-48" /></div>
                 <span className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.3em]">Submitted Arrears Records</span>
                 <div className="text-6xl font-black mt-4 tracking-tighter">KES {selectedDebtor?.totalArrears.toLocaleString()}</div>
+                <div className="mt-2 text-emerald-400 text-[10px] font-black uppercase tracking-widest italic opacity-80">
+                  {selectedDebtor?.totalArrearsWords}
+                </div>
                 <div className="mt-6 text-slate-400 text-sm font-medium uppercase tracking-widest">{selectedDebtor?.arrearsPeriod} Arrears</div>
                 <p className="mt-8 text-xs text-slate-500 italic max-w-sm mx-auto leading-relaxed">" {selectedDebtor?.totalArrearsWords} "</p>
               </div>
@@ -194,6 +212,15 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
           {step === 3 && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
               <div className="flex items-center space-x-2 text-emerald-600 font-black uppercase tracking-widest text-xs"><Calendar className="w-4 h-4" /><span>Proposed Payment Schedule</span></div>
+              
+              <div className="bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100/50 space-y-2">
+                <p className="text-[11px] font-black text-emerald-800 uppercase tracking-widest">Instructions:</p>
+                <p className="text-xs text-emerald-700 font-medium leading-relaxed">
+                  Please counter-check on your client portal that the information indicated below is correct. 
+                  <span className="block mt-1 font-black underline">Select appropriate payment date for each period.</span>
+                </p>
+              </div>
+
               <div className="border rounded-3xl overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 font-black text-slate-400 uppercase text-[10px] tracking-widest"><tr><th className="px-8 py-5 text-left">Installment Period</th><th className="px-8 py-5 text-left">Amount (KES)</th><th className="px-8 py-5 text-left text-slate-800">Payment Due Date *</th></tr></thead>
