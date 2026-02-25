@@ -49,8 +49,6 @@ export interface AgreementData extends DebtorRecord {
   approvedAt?: string;
 }
 
-export type ViewState = 'CLIENT_PORTAL' | 'ADMIN_DASHBOARD' | 'SUCCESS_SCREEN' | 'ADMIN_LOGIN';
-
 // Helper to resolve environment variables in various browser environments
 export const getEnv = (key: string, fallback: string = ''): string => {
   return import.meta.env[key] || fallback;

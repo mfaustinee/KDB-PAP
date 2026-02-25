@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { AgreementForm } from './components/AgreementForm.tsx';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { SuccessScreen } from './components/SuccessScreen.tsx';
-import { AgreementData, DebtorRecord, ViewState, ArrearItem, StaffConfig } from './types.ts';
+import { AgreementData, DebtorRecord, ArrearItem, StaffConfig } from './types.ts';
 import { ShieldCheck, User, ClipboardList, Cloud, CloudOff, Loader2, LogOut, Lock } from 'lucide-react';
 import { DBService } from './services/db.ts';
 import { EmailService } from './services/email.ts';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewState>('CLIENT_PORTAL');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [agreements, setAgreements] = useState<AgreementData[]>([]);
   const [debtors, setDebtors] = useState<DebtorRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -27,20 +29,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleAdminAccess = () => {
-    if (isAdminAuthenticated) {
-      setView('ADMIN_DASHBOARD');
-    } else {
-      setView('ADMIN_LOGIN');
-    }
+    navigate('/admin');
   };
 
   const handleAdminLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (adminPasswordInput === 'KDB@2024') {
       setIsAdminAuthenticated(true);
-      setView('ADMIN_DASHBOARD');
       setLoginError(false);
       setAdminPasswordInput('');
+      navigate('/admin');
     } else {
       setLoginError(true);
       setTimeout(() => setLoginError(false), 2000);
@@ -49,7 +47,7 @@ const App: React.FC = () => {
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
-    setView('CLIENT_PORTAL');
+    navigate('/');
   };
 
   const loadDatabase = async () => {
@@ -71,7 +69,7 @@ const App: React.FC = () => {
         const found = uniqueAgreements.find(a => a.id === id);
         if (found) {
           setCurrentAgreement(found);
-          setView('SUCCESS_SCREEN');
+          navigate('/success');
         }
       }
       setUnreadCount(uniqueAgreements.filter(a => a.status === 'submitted' || a.status === 'resubmission_requested').length);
@@ -127,7 +125,7 @@ const App: React.FC = () => {
       setUnreadCount(updated.filter(a => a.status === 'submitted' || a.status === 'resubmission_requested').length);
       
       setCurrentAgreement(data);
-      setView('SUCCESS_SCREEN');
+      navigate('/success');
     } catch (error) {
       console.error("Submission failed:", error);
       alert("Submission failed. Please check your connection and try again.");
@@ -174,7 +172,7 @@ const App: React.FC = () => {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('CLIENT_PORTAL')}>
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
               <div className="bg-emerald-600 p-2 rounded-xl flex items-center shadow-lg shadow-emerald-100">
                 <ShieldCheck className="text-white w-5 h-5" />
               </div>
@@ -197,19 +195,19 @@ const App: React.FC = () => {
             
             <nav className="flex space-x-1.5">
               <button 
-                onClick={() => setView('CLIENT_PORTAL')}
-                className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'CLIENT_PORTAL' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                onClick={() => navigate('/')}
+                className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all ${location.pathname === '/' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 <User className="w-4 h-4 mr-2" />
                 Portal
               </button>
               <button 
                 onClick={handleAdminAccess}
-                className={`relative flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'ADMIN_DASHBOARD' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`relative flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all ${location.pathname === '/admin' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 <ClipboardList className="w-4 h-4 mr-2" />
                 Admin
-                {unreadCount > 0 && view !== 'ADMIN_DASHBOARD' && (
+                {unreadCount > 0 && location.pathname !== '/admin' && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-600 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white animate-bounce font-black">
                     {unreadCount}
                   </span>
@@ -230,62 +228,67 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-grow">
-        {view === 'CLIENT_PORTAL' && (
-          <AgreementForm agreements={agreements} debtors={debtors} onSubmit={handleClientSubmit} />
-        )}
-        {view === 'ADMIN_LOGIN' && (
-          <div className="max-w-md mx-auto mt-20 p-10 bg-white rounded-[40px] shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-300">
-            <div className="text-center mb-8">
-              <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Lock className="text-white w-8 h-8" />
+        <Routes>
+          <Route path="/" element={<AgreementForm agreements={agreements} debtors={debtors} onSubmit={handleClientSubmit} />} />
+          <Route path="/admin" element={
+            isAdminAuthenticated ? (
+              <AdminDashboard 
+                agreements={agreements} 
+                debtors={debtors}
+                staffConfig={staffConfig}
+                onAction={handleAdminAction} 
+                onDebtorUpdate={handleDebtorUpdate}
+                onStaffUpdate={handleStaffUpdate}
+              />
+            ) : (
+              <div className="max-w-md mx-auto mt-20 p-10 bg-white rounded-[40px] shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-300">
+                <div className="text-center mb-8">
+                  <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <Lock className="text-white w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-800">Admin Access</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">Restricted Personnel Only</p>
+                </div>
+                <form onSubmit={handleAdminLogin} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Security Password</label>
+                    <input 
+                      autoFocus
+                      type="password" 
+                      value={adminPasswordInput}
+                      onChange={e => setAdminPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 focus:bg-white outline-none transition-all font-bold ${loginError ? 'border-rose-500 ring-4 ring-rose-500/10 animate-shake' : 'focus:ring-4 focus:ring-slate-900/10'}`}
+                    />
+                  </div>
+                  {loginError && (
+                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest text-center animate-pulse">Invalid Credentials</p>
+                  )}
+                  <button 
+                    type="submit"
+                    className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-slate-800 shadow-xl transition-all uppercase tracking-widest text-xs"
+                  >
+                    Authenticate
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/')}
+                    className="w-full text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-all"
+                  >
+                    Return to Portal
+                  </button>
+                </form>
               </div>
-              <h2 className="text-2xl font-black text-slate-800">Admin Access</h2>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">Restricted Personnel Only</p>
-            </div>
-            <form onSubmit={handleAdminLogin} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Security Password</label>
-                <input 
-                  autoFocus
-                  type="password" 
-                  value={adminPasswordInput}
-                  onChange={e => setAdminPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 focus:bg-white outline-none transition-all font-bold ${loginError ? 'border-rose-500 ring-4 ring-rose-500/10 animate-shake' : 'focus:ring-4 focus:ring-slate-900/10'}`}
-                />
-              </div>
-              {loginError && (
-                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest text-center animate-pulse">Invalid Credentials</p>
-              )}
-              <button 
-                type="submit"
-                className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-slate-800 shadow-xl transition-all uppercase tracking-widest text-xs"
-              >
-                Authenticate
-              </button>
-              <button 
-                type="button"
-                onClick={() => setView('CLIENT_PORTAL')}
-                className="w-full text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-all"
-              >
-                Return to Portal
-              </button>
-            </form>
-          </div>
-        )}
-        {view === 'ADMIN_DASHBOARD' && (
-          <AdminDashboard 
-            agreements={agreements} 
-            debtors={debtors}
-            staffConfig={staffConfig}
-            onAction={handleAdminAction} 
-            onDebtorUpdate={handleDebtorUpdate}
-            onStaffUpdate={handleStaffUpdate}
-          />
-        )}
-        {view === 'SUCCESS_SCREEN' && currentAgreement && (
-          <SuccessScreen agreement={currentAgreement} onReturn={() => setView('CLIENT_PORTAL')} />
-        )}
+            )
+          } />
+          <Route path="/success" element={
+            currentAgreement ? (
+              <SuccessScreen agreement={currentAgreement} onReturn={() => navigate('/')} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } />
+        </Routes>
       </main>
       
       <footer className="py-6 border-t bg-white text-center">
