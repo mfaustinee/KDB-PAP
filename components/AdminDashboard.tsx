@@ -69,8 +69,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
   const envCheck = {
     supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
     supabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-    emailId: !!import.meta.env.VITE_EMAILJS_SERVICE_ID,
-    emailKey: !!import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
   };
 
   const selectedReview = agreements.find(a => a.id === selectedReviewId);
@@ -93,7 +91,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
       'Authenticating Credentials...',
       'Applying Digital Signature...',
       'Generating Execution Certificate...',
-      'Dispatching Notification Email to DBO...'
+      'Finalizing Approval...'
     ];
 
     for (const s of steps) {
@@ -312,13 +310,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
           </button>
         </div>
       </div>
-
-      {!envCheck.emailId && (
-        <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center text-amber-800 text-xs font-bold">
-          <AlertTriangle className="w-4 h-4 mr-3 text-amber-500" />
-          <span>EmailJS configuration is missing. Submissions will not trigger email notifications. Please set VITE_EMAILJS_SERVICE_ID and VITE_EMAILJS_PUBLIC_KEY.</span>
-        </div>
-      )}
 
       {tab === 'reviews' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -612,20 +603,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                                 </div>
                             )}
                         </div>
-                        <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${envCheck.emailId && envCheck.emailKey ? 'bg-amber-50 border-amber-100' : 'bg-rose-50 border-rose-100'}`}>
-                            <div className="flex items-center space-x-3">
-                                <Mail className={`w-4 h-4 ${envCheck.emailId ? 'text-amber-500' : 'text-rose-500'}`} />
-                                <span className={`text-xs font-bold ${envCheck.emailId ? 'text-amber-700' : 'text-rose-700'}`}>EmailJS Protocol</span>
-                            </div>
-                            {envCheck.emailId && envCheck.emailKey ? (
-                                <span className="text-[9px] font-black text-amber-600 bg-white px-2 py-0.5 rounded shadow-sm">READY</span>
-                            ) : (
-                                <div className="flex items-center space-x-2">
-                                  <AlertCircle className="w-3 h-3 text-rose-500" />
-                                  <span className="text-[9px] font-black text-rose-600 bg-white px-2 py-0.5 rounded shadow-sm uppercase tracking-tight">MISSING KEYS</span>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -665,8 +642,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                  <div className="grid grid-cols-2 gap-2 text-[9px] font-mono">
                    <div className="bg-white/10 p-2 rounded">SUPABASE_URL</div>
                    <div className="bg-white/10 p-2 rounded">SUPABASE_ANON_KEY</div>
-                   <div className="bg-white/10 p-2 rounded">EMAILJS_PUBLIC_KEY</div>
-                   <div className="bg-white/10 p-2 rounded">EMAILJS_SERVICE_ID</div>
                  </div>
               </div>
             </div>

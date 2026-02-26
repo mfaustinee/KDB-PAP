@@ -83,7 +83,6 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
       'Compiling legal agreement...',
       'Encrypting digital signatures...',
       'Uploading to KDB Secure Servers...',
-      'Notifying Accounts Assistant via Email...',
       'Finalizing transmission...'
     ];
 
