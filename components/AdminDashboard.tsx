@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AgreementData, DebtorRecord, ArrearItem, Installment, StaffConfig, KDB_ADMIN_EMAIL } from '../types.ts';
 import { Eye, Plus, Trash2, Database, FileCheck, UserPlus, MapPin, ShieldCheck, AlertTriangle, Send, Settings, Upload, CheckCircle2, Briefcase, FileText, FileSearch, Mail, Calendar, Check, Loader2, Search, X, Download, Server, Cpu, Globe, Key, Lock, Activity, AlertCircle, ExternalLink, PenTool } from 'lucide-react';
 import { PDFPreview } from './PDFPreview.tsx';
+import { generateAgreementPDF } from '../services/email.ts';
 
 interface AdminDashboardProps {
   agreements: AgreementData[];
@@ -169,6 +170,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
     setEditingDebtorId(debtor.id);
     setNewDebtor(debtor);
     setIsAddingDebtor(true);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!selectedReview) return;
+    const pdfData = generateAgreementPDF(selectedReview);
+    if (pdfData) {
+      const link = document.createElement('a');
+      link.href = `data:application/pdf;base64,${pdfData}`;
+      link.download = `Signed_Agreement_${selectedReview.dboName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -454,15 +468,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">KDB Execution</h4>
-                          <div className="flex items-center space-x-5 bg-emerald-50/50 p-6 rounded-[32px] border border-emerald-100">
-                            <img src={selectedReview.officialSignature} className="h-20 w-32 object-contain" />
-                            <div>
-                              <div className="text-sm font-black text-slate-800">{selectedReview.officialName}</div>
-                              <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-emerald-600">Authorized & Sent</div>
+                        <div className="space-y-6">
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">KDB Execution</h4>
+                            <div className="flex items-center space-x-5 bg-emerald-50/50 p-6 rounded-[32px] border border-emerald-100">
+                              <img src={selectedReview.officialSignature} className="h-20 w-32 object-contain" />
+                              <div>
+                                <div className="text-sm font-black text-slate-800">{selectedReview.officialName}</div>
+                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-emerald-600">Authorized & Sent</div>
+                              </div>
                             </div>
                           </div>
+                          
+                          {selectedReview.status === 'approved' && (
+                            <button 
+                              onClick={handleDownloadPDF}
+                              className="w-full py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center"
+                            >
+                              <Download className="w-4 h-4 mr-2" /> Download Signed PDF
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

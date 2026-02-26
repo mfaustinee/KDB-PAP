@@ -6,7 +6,7 @@ const getEnv = (key: string, fallback: string) => {
   return import.meta.env[key] || fallback;
 };
 
-const generateAgreementPDF = (agreement: AgreementData): string | null => {
+export const generateAgreementPDF = (agreement: AgreementData): string | null => {
   try {
     const doc = new jsPDF();
     
@@ -87,7 +87,14 @@ export const EmailService = {
               template_id: this.config.TEMPLATE_ADMIN,
               user_id: this.config.PUBLIC_KEY,
               accessToken: this.config.ACCESS_TOKEN,
-              template_params: templateParams
+              template_params: templateParams,
+              attachments: pdfBase64 ? [
+                {
+                  name: `Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`,
+                  data: pdfBase64,
+                  type: 'application/pdf'
+                }
+              ] : []
           })
       });
       
@@ -123,7 +130,14 @@ export const EmailService = {
                 template_id: this.config.TEMPLATE_CLIENT,
                 user_id: this.config.PUBLIC_KEY,
                 accessToken: this.config.ACCESS_TOKEN,
-                template_params: templateParams
+                template_params: templateParams,
+                attachments: pdfBase64 ? [
+                  {
+                    name: `Signed_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`,
+                    data: pdfBase64,
+                    type: 'application/pdf'
+                  }
+                ] : []
             })
         });
         
@@ -159,7 +173,14 @@ export const EmailService = {
                 template_id: this.config.TEMPLATE_CLIENT,
                 user_id: this.config.PUBLIC_KEY,
                 accessToken: this.config.ACCESS_TOKEN,
-                template_params: templateParams
+                template_params: templateParams,
+                attachments: pdfBase64 ? [
+                  {
+                    name: `Agreement_Review_${agreement.dboName.replace(/\s+/g, '_')}.pdf`,
+                    data: pdfBase64,
+                    type: 'application/pdf'
+                  }
+                ] : []
             })
         });
         
