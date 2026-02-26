@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AgreementData, DebtorRecord, ArrearItem, Installment, StaffConfig, KDB_ADMIN_EMAIL } from '../types.ts';
 import { Eye, Plus, Trash2, Database, FileCheck, UserPlus, MapPin, ShieldCheck, AlertTriangle, Send, Settings, Upload, CheckCircle2, Briefcase, FileText, FileSearch, Mail, Calendar, Check, Loader2, Search, X, Download, Server, Cpu, Globe, Key, Lock, Activity, AlertCircle, ExternalLink, PenTool } from 'lucide-react';
 import { PDFPreview } from './PDFPreview.tsx';
-import { generateAgreementPDF } from '../services/email.ts';
+import { downloadAgreementPDF } from '../services/pdf.ts';
 
 interface AdminDashboardProps {
   agreements: AgreementData[];
@@ -174,19 +174,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
 
   const handleDownloadPDF = async () => {
     if (!selectedReview) return;
-    const pdfData = await generateAgreementPDF(selectedReview);
-    if (pdfData) {
-      const link = document.createElement('a');
-      link.href = `data:application/pdf;base64,${pdfData}`;
-      link.download = `Signed_Agreement_${selectedReview.dboName.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    await downloadAgreementPDF(selectedReview, 'formal-agreement-hidden');
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
+      {/* Hidden PDF Preview for background generation */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+        {selectedReview && (
+          <div id="formal-agreement-hidden">
+            <PDFPreview agreement={selectedReview} onClose={() => {}} isHidden />
+          </div>
+        )}
+      </div>
+
       {showPreview && selectedReview && (
         <PDFPreview agreement={selectedReview} onClose={() => setShowPreview(false)} />
       )}

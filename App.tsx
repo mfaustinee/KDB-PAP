@@ -7,7 +7,6 @@ import { SuccessScreen } from './components/SuccessScreen.tsx';
 import { AgreementData, DebtorRecord, ArrearItem, StaffConfig } from './types.ts';
 import { ShieldCheck, User, ClipboardList, Cloud, CloudOff, Loader2, LogOut, Lock } from 'lucide-react';
 import { DBService } from './services/db.ts';
-import { EmailService } from './services/email.ts';
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -117,9 +116,6 @@ const App: React.FC = () => {
         await DBService.saveAgreement(submission);
       }
       
-      // Trigger Admin Notification
-      await EmailService.sendAdminNotification(submission);
-      
       const updated = await DBService.getAgreements();
       setAgreements(updated);
       setUnreadCount(updated.filter(a => a.status === 'submitted' || a.status === 'resubmission_requested').length);
@@ -144,14 +140,6 @@ const App: React.FC = () => {
     
     const updated = await DBService.getAgreements();
     
-    // If approved, send notification to client
-    if (action === 'approve') {
-      const approvedAgreement = updated.find(a => a.id === id);
-      if (approvedAgreement) {
-        await EmailService.sendClientApproval(approvedAgreement);
-      }
-    }
-
     setAgreements(updated);
     setUnreadCount(updated.filter(a => a.status === 'submitted' || a.status === 'resubmission_requested').length);
     setIsSyncing(false);
