@@ -172,9 +172,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
     setIsAddingDebtor(true);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!selectedReview) return;
-    const pdfData = generateAgreementPDF(selectedReview);
+    const pdfData = await generateAgreementPDF(selectedReview);
     if (pdfData) {
       const link = document.createElement('a');
       link.href = `data:application/pdf;base64,${pdfData}`;
