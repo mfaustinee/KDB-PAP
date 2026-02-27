@@ -21,12 +21,15 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       logging: true,
       backgroundColor: '#ffffff',
       windowWidth: 1200,
-      height: element.scrollHeight, // Use scrollHeight to capture everything
+      windowHeight: element.scrollHeight + 200, // Ensure window is tall enough
+      height: element.scrollHeight,
       onclone: (clonedDoc) => {
         const clonedElement = clonedDoc.getElementById(elementId);
         if (clonedElement) {
           clonedElement.style.height = 'auto';
           clonedElement.style.overflow = 'visible';
+          clonedElement.style.position = 'relative';
+          clonedElement.style.display = 'block';
         }
         // Ensure images are loaded
         const images = clonedDoc.getElementsByTagName('img');
@@ -39,17 +42,22 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
     const imgData = canvas.toDataURL('image/jpeg', 1.0);
     const pdf = new jsPDF('p', 'mm', 'a4');
     
+    const imgProps = pdf.getImageProperties(imgData);
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    const imgProps = pdf.getImageProperties(imgData);
-    const ratio = imgProps.width / imgProps.height;
-    const width = pdfWidth;
-    const height = pdfWidth / ratio;
+    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    let heightLeft = imgHeight;
+    let position = 0;
 
-    // If the content is longer than one page, we might need to handle it, 
-    // but for this agreement it should fit on one A4 or we can scale it.
-    pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position -= pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
     
     pdf.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
   } catch (error) {
