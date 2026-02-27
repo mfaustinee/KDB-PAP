@@ -46,7 +46,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     
-    const margin = 15; // 15mm margin
+    const margin = 20; // 20mm margin
     const innerWidth = pdfWidth - (margin * 2);
     const innerHeight = pdfHeight - (margin * 2);
     const imgHeight = (imgProps.height * innerWidth) / imgProps.width;
