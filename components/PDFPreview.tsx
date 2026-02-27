@@ -96,8 +96,8 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ agreement, onClose, isHi
             </section>
 
             {/* Execution Blocks */}
-            <div className="pt-8 grid grid-cols-2 gap-12">
-              <div className="space-y-4">
+            <div className="pt-8 flex justify-between space-x-12">
+              <div className="flex-1 space-y-4">
                 <p className="font-black border-b border-slate-900 pb-1">FOR: KENYA DAIRY BOARD</p>
                 <div className="space-y-2 min-h-[120px]">
                   <p><span className="text-[10px] font-bold uppercase text-slate-400">Name:</span> <span className="font-bold">{agreement.officialName || '................................'}</span></p>
@@ -233,8 +233,8 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ agreement, onClose, isHi
             </section>
 
             {/* Execution Blocks */}
-            <div className="pt-8 grid grid-cols-2 gap-12">
-              <div className="space-y-4">
+            <div className="pt-8 flex justify-between space-x-12">
+              <div className="flex-1 space-y-4">
                 <p className="font-black border-b border-slate-900 pb-1">FOR: KENYA DAIRY BOARD</p>
                 <div className="space-y-2 min-h-[120px]">
                   <p><span className="text-[10px] font-bold uppercase text-slate-400">Name:</span> <span className="font-bold">{agreement.officialName || '................................'}</span></p>
