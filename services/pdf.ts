@@ -29,13 +29,15 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       width: 186, // A4 width (210) - margins (12+12)
       windowWidth: 1000, // Reference width for scaling
       autoPaging: 'text',
-      margin: [5, 12, 12, 12],
+      margin: [5, 12, 5, 12], // [top, left, bottom, right] - applies to all pages
       html2canvas: {
         scale: 0.186, // Adjusted scale for 1000px -> 186mm
         useCORS: true,
         logging: false,
         letterRendering: true,
-        allowTaint: false
+        allowTaint: false,
+        scrollX: 0,
+        scrollY: 0
       }
     });
 
