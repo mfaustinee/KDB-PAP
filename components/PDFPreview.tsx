@@ -16,7 +16,7 @@ interface AgreementContentProps {
 }
 
 const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) => (
-  <div className="px-16 pb-12 text-slate-900 bg-white leading-[1.6] text-[12pt] font-sans text-left w-[1024px] box-border" id={id}>
+  <div className="px-10 pb-12 text-slate-900 bg-white leading-relaxed text-[12pt] font-sans text-left w-[1024px] box-border antialiased" id={id}>
     {/* Header */}
     <div className="flex flex-col items-center text-center mb-8 pt-2 break-inside-avoid">
       <div className="space-y-1 w-full flex flex-col items-center justify-center text-center">
@@ -47,9 +47,9 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
         </div>
       </div>
 
-      <section className="break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2">1. Purpose of Agreement</h3>
-        <p>This agreement outlines the payment schedule for outstanding, undisputed levy arrears amounting to Kenya Shillings <span className="font-bold">{agreement.totalArrearsWords}</span> (KES <span className="font-bold">{agreement.totalArrears.toLocaleString()}</span>) owed by the above-named operator for the period of <span className="font-bold">{agreement.arrearsPeriod}</span>.</p>
+      <section className="break-inside-avoid text-left">
+        <h3 className="font-bold uppercase mb-2 text-left">1. Purpose of Agreement</h3>
+        <p className="text-left">This agreement outlines the payment schedule for outstanding, undisputed levy arrears amounting to Kenya Shillings <span className="font-bold">{agreement.totalArrearsWords}</span> (KES <span className="font-bold">{agreement.totalArrears.toLocaleString()}</span>) owed by the above-named operator for the period of <span className="font-bold">{agreement.arrearsPeriod}</span>.</p>
         <p className="mt-2 text-left"><span className="font-bold">Debit Note No:</span> {agreement.debitNoteNo}</p>
       </section>
 
@@ -81,19 +81,19 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
         </table>
       </section>
 
-      <section className="space-y-2 break-inside-avoid">
+      <section className="space-y-2 break-inside-avoid text-left">
         <h3 className="font-bold uppercase mb-2 text-left">3. Terms and Conditions</h3>
-        <p className="break-inside-avoid">a) The DBO acknowledges, agrees to, and does not dispute the levy amount indicated herein.</p>
-        <p className="break-inside-avoid">b) Payments shall be made to the designated KDB Bank Account or via the E-Citizen Collection account as directed by KDB.</p>
-        <p className="break-inside-avoid">c) The DBO shall submit proof of each payment immediately upon settlement.</p>
-        <p className="font-bold break-inside-avoid">d) Failure by the DBO to honor ANY installment within seven (7) days of its due date shall void this agreement and the entire outstanding balance shall become immediately due and payable in full.</p>
-        <p className="break-inside-avoid">e) KDB reserves the right to initiate legal or enforcement action upon breach of this agreement.</p>
-        <p className="break-inside-avoid">f) Applications for the renewal of any KDB-issued permit shall not be processed or approved while any part of this agreed-upon debt remains outstanding.</p>
-        <p className="break-inside-avoid">g) This Agreement pertains only to the outstanding levy amount specified herein and does not constitute a waiver of any other regulatory requirements or obligations imposed on the DBO by KDB.</p>
-        <p className="break-inside-avoid">h) In the event of business cessation, dissolution or merger, the outstanding levy obligation shall be settled in full prior to final deregistration or exit.</p>
-        <p className="break-inside-avoid">i) This agreement shall be binding on successors, assignees, and any legal representatives of the operator.</p>
-        <p className="break-inside-avoid">j) The DBO agrees to remain in full compliance with all relevant laws and regulations as prescribed under The Dairy Industry Act (Cap 336) and its subsidiary regulations.</p>
-        <p className="break-inside-avoid">k) No Waiver of Rights. Any delay or failure by KDB to enforce a term of this Agreement does not waive its right to do so later. For instance, accepting one late payment does not prevent KDB from taking action if another payment is late.</p>
+        <p className="break-inside-avoid text-left">a) The DBO acknowledges, agrees to, and does not dispute the levy amount indicated herein.</p>
+        <p className="break-inside-avoid text-left">b) Payments shall be made to the designated KDB Bank Account or via the E-Citizen Collection account as directed by KDB.</p>
+        <p className="break-inside-avoid text-left">c) The DBO shall submit proof of each payment immediately upon settlement.</p>
+        <p className="font-bold break-inside-avoid text-left">d) Failure by the DBO to honor ANY installment within seven (7) days of its due date shall void this agreement and the entire outstanding balance shall become immediately due and payable in full.</p>
+        <p className="break-inside-avoid text-left">e) KDB reserves the right to initiate legal or enforcement action upon breach of this agreement.</p>
+        <p className="break-inside-avoid text-left">f) Applications for the renewal of any KDB-issued permit shall not be processed or approved while any part of this agreed-upon debt remains outstanding.</p>
+        <p className="break-inside-avoid text-left">g) This Agreement pertains only to the outstanding levy amount specified herein and does not constitute a waiver of any other regulatory requirements or obligations imposed on the DBO by KDB.</p>
+        <p className="break-inside-avoid text-left">h) In the event of business cessation, dissolution or merger, the outstanding levy obligation shall be settled in full prior to final deregistration or exit.</p>
+        <p className="break-inside-avoid text-left">i) This agreement shall be binding on successors, assignees, and any legal representatives of the operator.</p>
+        <p className="break-inside-avoid text-left">j) The DBO agrees to remain in full compliance with all relevant laws and regulations as prescribed under The Dairy Industry Act (Cap 336) and its subsidiary regulations.</p>
+        <p className="break-inside-avoid text-left">k) No Waiver of Rights. Any delay or failure by KDB to enforce a term of this Agreement does not waive its right to do so later. For instance, accepting one late payment does not prevent KDB from taking action if another payment is late.</p>
       </section>
 
       {/* Execution Blocks */}

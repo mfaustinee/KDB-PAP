@@ -20,7 +20,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       putOnlyUsedFonts: true
     });
 
-    const targetWidth = 190; // 210mm - 20mm total margins (10mm each side)
+    const targetWidth = 195; // 210mm - 15mm total margins (5mm left, 10mm right)
     const referenceWidth = 1024;
     const scale = (targetWidth / referenceWidth);
 
@@ -28,12 +28,12 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       callback: function (doc) {
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
-      x: 10,
+      x: 5,
       y: 5,
       width: targetWidth,
       windowWidth: referenceWidth,
       autoPaging: 'text',
-      margin: [15, 10, 15, 10],
+      margin: [15, 10, 15, 5],
       html2canvas: {
         scale: scale,
         useCORS: true,
