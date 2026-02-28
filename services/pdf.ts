@@ -20,25 +20,30 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       putOnlyUsedFonts: true
     });
 
+    const targetWidth = 180; // 210mm - 30mm margins
+    const referenceWidth = 800;
+    const resolution = 2; // 2x resolution for crispness
+    const scale = (targetWidth / referenceWidth) * resolution;
+
     await pdf.html(element, {
       callback: function (doc) {
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
       x: 15,
       y: 5,
-      width: 180, // A4 width (210) - margins (15+15)
-      windowWidth: 800, // Reduced reference width for better text proportions
+      width: targetWidth,
+      windowWidth: referenceWidth,
       autoPaging: 'text',
-      margin: [5, 15, 5, 15], // [top, left, bottom, right] - 15mm left/right
+      margin: [5, 15, 5, 15],
       html2canvas: {
-        scale: 0.225, // 180mm / 800px = 0.225
+        scale: scale,
         useCORS: true,
         logging: false,
         letterRendering: true,
         allowTaint: false,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 800
+        windowWidth: referenceWidth
       }
     });
 
