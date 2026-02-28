@@ -1,5 +1,4 @@
 
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { AgreementData } from '../types';
 
@@ -11,36 +10,36 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
   }
 
   try {
+    // Scroll to top to ensure full capture
+    window.scrollTo(0, 0);
+    
     const pdf = new jsPDF({
       orientation: 'p',
       unit: 'mm',
       format: 'a4',
-      compress: true
+      putOnlyUsedFonts: true
     });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15; // Side/Bottom margin
-    const topMargin = 5; // 5mm top margin
-    const innerWidth = pdfWidth - (margin * 2);
-
-    // Use the .html() method for intelligent, text-aware paging
     await pdf.html(element, {
-      callback: (doc) => {
+      callback: function (doc) {
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
-      x: margin,
-      y: topMargin,
-      width: innerWidth,
-      windowWidth: 1000, // Fixed width for consistent rendering
-      autoPaging: 'text', // This is the "text-aware" paging
+      x: 12,
+      y: 5,
+      width: 186, // A4 width (210) - margins (12+12)
+      windowWidth: 800, // Reduced reference width for better text proportions
+      autoPaging: 'text',
+      margin: [5, 12, 5, 12], // [top, left, bottom, right] - 5mm top/bottom on all pages
       html2canvas: {
-        scale: 0.25, // Adjust scale to fit content properly
+        scale: 0.2325, // 186mm / 800px = 0.2325
         useCORS: true,
-        allowTaint: false,
-        letterRendering: true,
         logging: false,
-      },
-      margin: [topMargin, margin, margin, margin] // [top, left, bottom, right]
+        letterRendering: true,
+        allowTaint: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 800
+      }
     });
 
   } catch (error) {
