@@ -18,14 +18,14 @@ interface AgreementContentProps {
 const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) => (
   <div className="px-16 pb-12 text-slate-900 bg-white leading-[1.6] text-[12pt] font-sans text-left w-[1024px] box-border" id={id}>
     {/* Header */}
-    <div className="flex flex-col items-center text-center mb-8 pt-6 break-inside-avoid">
-      <div className="space-y-1 w-full flex flex-col items-center">
+    <div className="flex flex-col items-center text-center mb-8 pt-2 break-inside-avoid">
+      <div className="space-y-1 w-full flex flex-col items-center justify-center text-center">
         <h1 className="text-3xl font-black uppercase tracking-tight text-center w-full">KENYA DAIRY BOARD - KERICHO</h1>
         <p className="text-lg font-bold text-center w-full">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>
         <p className="text-lg font-bold text-center w-full">Tel: 0717997465 / 0734026367</p>
       </div>
       <div className="w-full border-b-2 border-slate-900 mt-4"></div>
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center text-center">
         <h2 className="text-xl font-black mt-6 uppercase underline decoration-2 underline-offset-4 text-center">Payment Agreement Form – Consumer Safety Levy Arrears</h2>
       </div>
     </div>
