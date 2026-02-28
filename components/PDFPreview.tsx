@@ -16,25 +16,25 @@ interface AgreementContentProps {
 }
 
 const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) => (
-  <div className="px-2 pb-32 text-slate-900 bg-white leading-[1.6] text-[12pt] font-sans text-justify" id={id}>
+  <div className="px-16 pt-0 pb-32 text-slate-900 bg-white min-h-[1200px] leading-[1.6] text-[12pt]" id={id}>
     {/* Header */}
-    <div className="flex flex-col items-center text-center mb-4 pt-0">
-      <div className="space-y-1 w-full">
-        <h1 className="text-3xl font-black uppercase tracking-tight text-center">KENYA DAIRY BOARD - KERICHO</h1>
-        <p className="text-lg font-bold text-center">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>
-        <p className="text-lg font-bold text-center">Tel: 0717997465 / 0734026367</p>
+    <div className="flex flex-col items-center text-center mb-4">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-black uppercase tracking-tight">KENYA DAIRY BOARD - KERICHO</h1>
+        <p className="text-lg font-bold">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>
+        <p className="text-lg font-bold">Tel: 0717997465 / 0734026367</p>
       </div>
       <div className="w-full border-b-2 border-slate-900 mt-2"></div>
-      <h2 className="text-xl font-black mt-4 uppercase underline decoration-2 underline-offset-4 text-center w-full">Payment Agreement Form – Consumer Safety Levy Arrears</h2>
+      <h2 className="text-xl font-black mt-4 uppercase underline decoration-2 underline-offset-4">Payment Agreement Form – Consumer Safety Levy Arrears</h2>
     </div>
 
     <div className="space-y-6">
-      <p className="break-inside-avoid">
+      <p>
         This Payment Agreement is entered into on this <span className="font-bold px-1">{new Date(agreement.date).getDate()}</span> day of 
         <span className="font-bold px-1">{new Date(agreement.date).toLocaleString('default', { month: 'long' })}</span> 20<span className="font-bold px-1">{new Date(agreement.date).getFullYear().toString().slice(-2)}</span> between:
       </p>
 
-      <div className="space-y-2 break-inside-avoid">
+      <div className="space-y-2">
         <p><span className="font-bold">The Kenya Dairy Board (hereafter referred to as “KDB”)</span>, a state corporation established through an Act of Parliament; The Dairy Industry Act (Cap 336) Laws of Kenya and;</p>
         <div className="pl-4 space-y-2">
           <p><span className="font-bold">Dairy Business Operator (DBO) Name:</span> <span>{agreement.dboName}</span></p>
@@ -45,21 +45,21 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
         </div>
       </div>
 
-      <section className="break-inside-avoid">
+      <section>
         <h3 className="font-bold uppercase mb-2">1. Purpose of Agreement</h3>
         <p>This agreement outlines the payment schedule for outstanding, undisputed levy arrears amounting to Kenya Shillings <span className="font-bold">{agreement.totalArrearsWords}</span> (KES <span className="font-bold">{agreement.totalArrears.toLocaleString()}</span>) owed by the above-named operator for the period of <span className="font-bold">{agreement.arrearsPeriod}</span>.</p>
-        <p className="mt-2 text-left"><span className="font-bold">Debit Note No:</span> {agreement.debitNoteNo}</p>
+        <p className="mt-2"><span className="font-bold">Debit Note No:</span> {agreement.debitNoteNo}</p>
       </section>
 
-      <section className="break-inside-avoid">
-        <h3 className="font-bold uppercase mb-2 text-left">2. Payment Schedule</h3>
-        <table className="w-full border-collapse border border-slate-800 text-left table-fixed">
+      <section>
+        <h3 className="font-bold uppercase mb-2">2. Payment Schedule</h3>
+        <table className="w-full border-collapse border border-slate-800">
           <thead>
             <tr className="bg-slate-50">
-              <th className="border border-slate-800 p-2 w-[12%]">Inst. No.</th>
-              <th className="border border-slate-800 p-2 w-[38%]">CSL Period</th>
-              <th className="border border-slate-800 p-2 w-[28%]">Due Date</th>
-              <th className="border border-slate-800 p-2 w-[22%] text-right">Amount (KES)</th>
+              <th className="border border-slate-800 p-2 text-left">Installment No.</th>
+              <th className="border border-slate-800 p-2 text-left">CSL Period</th>
+              <th className="border border-slate-800 p-2 text-left">Agreed Payment Due Date</th>
+              <th className="border border-slate-800 p-2 text-right">Amount (KES)</th>
             </tr>
           </thead>
           <tbody>
@@ -68,34 +68,34 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
                 <td className="border border-slate-800 p-2">{inst.no}</td>
                 <td className="border border-slate-800 p-2">{inst.period}</td>
                 <td className="border border-slate-800 p-2 font-bold">{inst.dueDate}</td>
-                <td className="border border-slate-800 p-2 text-right font-bold">{Number(inst.amount).toLocaleString()}</td>
+                <td className="border border-slate-800 p-2 text-right font-bold">{inst.amount.toLocaleString()}</td>
               </tr>
             ))}
             <tr className="bg-slate-50 font-black">
               <td colSpan={3} className="border border-slate-800 p-2 text-right">TOTAL ARREARS DUE:</td>
-              <td className="border border-slate-800 p-2 text-right underline underline-offset-2">KES {Number(agreement.totalArrears).toLocaleString()}</td>
+              <td className="border border-slate-800 p-2 text-right underline underline-offset-2">KES {agreement.totalArrears.toLocaleString()}</td>
             </tr>
           </tbody>
         </table>
       </section>
 
       <section className="space-y-2">
-        <h3 className="font-bold uppercase mb-2 break-inside-avoid text-left">3. Terms and Conditions</h3>
-        <p className="break-inside-avoid">a) The DBO acknowledges, agrees to, and does not dispute the levy amount indicated herein.</p>
-        <p className="break-inside-avoid">b) Payments shall be made to the designated KDB Bank Account or via the E-Citizen Collection account as directed by KDB.</p>
-        <p className="break-inside-avoid">c) The DBO shall submit proof of each payment immediately upon settlement.</p>
-        <p className="font-bold break-inside-avoid">d) Failure by the DBO to honor ANY installment within seven (7) days of its due date shall void this agreement and the entire outstanding balance shall become immediately due and payable in full.</p>
-        <p className="break-inside-avoid">e) KDB reserves the right to initiate legal or enforcement action upon breach of this agreement.</p>
-        <p className="break-inside-avoid">f) Applications for the renewal of any KDB-issued permit shall not be processed or approved while any part of this agreed-upon debt remains outstanding.</p>
-        <p className="break-inside-avoid">g) This Agreement pertains only to the outstanding levy amount specified herein and does not constitute a waiver of any other regulatory requirements or obligations imposed on the DBO by KDB.</p>
-        <p className="break-inside-avoid">h) In the event of business cessation, dissolution or merger, the outstanding levy obligation shall be settled in full prior to final deregistration or exit.</p>
-        <p className="break-inside-avoid">i) This agreement shall be binding on successors, assignees, and any legal representatives of the operator.</p>
-        <p className="break-inside-avoid">j) The DBO agrees to remain in full compliance with all relevant laws and regulations as prescribed under The Dairy Industry Act (Cap 336) and its subsidiary regulations.</p>
-        <p className="break-inside-avoid">k) No Waiver of Rights. Any delay or failure by KDB to enforce a term of this Agreement does not waive its right to do so later. For instance, accepting one late payment does not prevent KDB from taking action if another payment is late.</p>
+        <h3 className="font-bold uppercase mb-2">3. Terms and Conditions</h3>
+        <p>a) The DBO acknowledges, agrees to, and does not dispute the levy amount indicated herein.</p>
+        <p>b) Payments shall be made to the designated KDB Bank Account or via the E-Citizen Collection account as directed by KDB.</p>
+        <p>c) The DBO shall submit proof of each payment immediately upon settlement.</p>
+        <p className="font-bold">d) Failure by the DBO to honor ANY installment within seven (7) days of its due date shall void this agreement and the entire outstanding balance shall become immediately due and payable in full.</p>
+        <p>e) KDB reserves the right to initiate legal or enforcement action upon breach of this agreement.</p>
+        <p>f) Applications for the renewal of any KDB-issued permit shall not be processed or approved while any part of this agreed-upon debt remains outstanding.</p>
+        <p>g) This Agreement pertains only to the outstanding levy amount specified herein and does not constitute a waiver of any other regulatory requirements or obligations imposed on the DBO by KDB.</p>
+        <p>h) In the event of business cessation, dissolution or merger, the outstanding levy obligation shall be settled in full prior to final deregistration or exit.</p>
+        <p>i) This agreement shall be binding on successors, assignees, and any legal representatives of the operator.</p>
+        <p>j) The DBO agrees to remain in full compliance with all relevant laws and regulations as prescribed under The Dairy Industry Act (Cap 336) and its subsidiary regulations.</p>
+        <p>k) No Waiver of Rights. Any delay or failure by KDB to enforce a term of this Agreement does not waive its right to do so later. For instance, accepting one late payment does not prevent KDB from taking action if another payment is late.</p>
       </section>
 
       {/* Execution Blocks */}
-      <div className="pt-8 flex justify-between space-x-12 break-inside-avoid text-left">
+      <div className="pt-8 flex justify-between space-x-12">
         <div className="flex-1 space-y-4">
           <p className="font-black border-b border-slate-900 pb-1">FOR: KENYA DAIRY BOARD</p>
           <div className="space-y-2 min-h-[120px]">
@@ -134,7 +134,7 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
 export const PDFPreview: React.FC<PDFPreviewProps> = ({ agreement, onClose, isHidden }) => {
   if (isHidden) {
     return (
-      <div className="fixed left-[-9999px] top-0 bg-white w-[800px] overflow-visible h-auto">
+      <div className="fixed left-[-9999px] top-0 bg-white w-[1000px] overflow-visible h-auto">
         <AgreementContent agreement={agreement} id="formal-agreement-hidden" />
       </div>
     );
@@ -142,7 +142,7 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ agreement, onClose, isHi
 
   return (
     <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-[800px] shadow-2xl rounded-none my-8 animate-in zoom-in-95 duration-300 relative">
+      <div className="bg-white w-full max-w-4xl shadow-2xl rounded-none my-8 animate-in zoom-in-95 duration-300 relative">
         {/* UI Controls - Not part of the PDF */}
         <div className="absolute -top-12 right-0 flex space-x-4 print:hidden">
           <button 
