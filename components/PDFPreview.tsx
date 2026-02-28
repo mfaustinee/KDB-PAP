@@ -16,7 +16,7 @@ interface AgreementContentProps {
 }
 
 const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) => (
-  <div className="px-16 pt-0 pb-32 text-slate-900 bg-white min-h-[1200px] leading-[1.6] text-[14pt]" id={id}>
+  <div className="px-16 pt-0 pb-32 text-slate-900 bg-white min-h-[1200px] leading-[1.6] text-[12pt]" id={id}>
     {/* Header */}
     <div className="flex flex-col items-center text-center mb-4 break-inside-avoid">
       <div className="space-y-1">

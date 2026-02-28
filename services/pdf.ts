@@ -19,7 +19,8 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15; // 15mm margin
+    const margin = 15; // Side/Bottom margin
+    const topMargin = 5; // 5mm top margin
     const innerWidth = pdfWidth - (margin * 2);
 
     // Use the .html() method for intelligent, text-aware paging
@@ -28,7 +29,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
       x: margin,
-      y: margin,
+      y: topMargin,
       width: innerWidth,
       windowWidth: 1000, // Fixed width for consistent rendering
       autoPaging: 'text', // This is the "text-aware" paging
@@ -39,7 +40,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
         letterRendering: true,
         logging: false,
       },
-      margin: [margin, margin, margin, margin] // [top, left, bottom, right]
+      margin: [topMargin, margin, margin, margin] // [top, left, bottom, right]
     });
 
   } catch (error) {
