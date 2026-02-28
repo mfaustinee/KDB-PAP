@@ -21,8 +21,8 @@ const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) =>
     <div className="flex flex-col items-center text-center mb-8 pt-0 break-inside-avoid">
       <div className="space-y-1 w-full flex flex-col items-center justify-center text-center">
         <h1 className="text-2xl font-bold uppercase tracking-tight text-center w-full">KENYA DAIRY BOARD - KERICHO</h1>
-        <p className="text-base font-bold text-center w-full">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>
-        <p className="text-base font-bold text-center w-full">Tel: 0717997465 / 0734026367</p>
+        <p className="text-lg font-bold text-center w-full">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>
+        <p className="text-lg font-bold text-center w-full">Tel: 0717997465 / 0734026367</p>
       </div>
       <div className="w-full border-b border-slate-900 mt-4"></div>
       <div className="w-full flex justify-center text-center">
