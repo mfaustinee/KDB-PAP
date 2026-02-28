@@ -27,17 +27,18 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       x: 12,
       y: 5,
       width: 186, // A4 width (210) - margins (12+12)
-      windowWidth: 1000, // Reference width for scaling
+      windowWidth: 800, // Reduced reference width for better text proportions
       autoPaging: 'text',
-      margin: [5, 12, 5, 12], // [top, left, bottom, right] - applies to all pages
+      margin: [5, 12, 5, 12],
       html2canvas: {
-        scale: 0.186, // Adjusted scale for 1000px -> 186mm
+        scale: 0.2325, // 186mm / 800px = 0.2325
         useCORS: true,
         logging: false,
         letterRendering: true,
         allowTaint: false,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        windowWidth: 800
       }
     });
 
