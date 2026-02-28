@@ -33,7 +33,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       width: targetWidth,
       windowWidth: referenceWidth,
       autoPaging: 'text',
-      margin: [5, 10, 15, 10],
+      margin: [15, 10, 15, 10],
       html2canvas: {
         scale: scale,
         useCORS: true,
