@@ -16,9 +16,9 @@ interface AgreementContentProps {
 }
 
 const AgreementContent: React.FC<AgreementContentProps> = ({ agreement, id }) => (
-  <div className="px-10 pb-12 text-slate-900 bg-white leading-[1.5] text-[11pt] font-sans text-left w-[1024px] box-border" id={id} style={{ fontFamily: 'Arial, Helvetica, sans-serif', whiteSpace: 'normal', wordSpacing: 'normal' }}>
+  <div className="px-10 pb-12 text-slate-900 bg-white leading-[1.5] text-[12pt] font-sans text-left w-[1024px] box-border" id={id} style={{ fontFamily: 'Arial, Helvetica, sans-serif', whiteSpace: 'normal', wordSpacing: 'normal' }}>
     {/* Header */}
-    <div className="flex flex-col items-center text-center mb-8 pt-2 break-inside-avoid">
+    <div className="flex flex-col items-center text-center mb-8 pt-0 break-inside-avoid">
       <div className="space-y-1 w-full flex flex-col items-center justify-center text-center">
         <h1 className="text-2xl font-bold uppercase tracking-tight text-center w-full">KENYA DAIRY BOARD - KERICHO</h1>
         <p className="text-base font-bold text-center w-full">Ardhi House (Huduma Centre) 5th Floor, Wing B.</p>

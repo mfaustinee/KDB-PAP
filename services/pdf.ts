@@ -29,7 +29,7 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
       x: 5,
-      y: 5,
+      y: 2,
       width: targetWidth,
       windowWidth: referenceWidth,
       autoPaging: 'text',
