@@ -24,14 +24,14 @@ export const downloadAgreementPDF = async (agreement: AgreementData, elementId: 
       callback: function (doc) {
         doc.save(`KDB_Agreement_${agreement.dboName.replace(/\s+/g, '_')}.pdf`);
       },
-      x: 12,
+      x: 15,
       y: 5,
-      width: 186, // A4 width (210) - margins (12+12)
+      width: 180, // A4 width (210) - margins (15+15)
       windowWidth: 800, // Reduced reference width for better text proportions
       autoPaging: 'text',
-      margin: [5, 12, 5, 12], // [top, left, bottom, right] - 5mm top/bottom on all pages
+      margin: [5, 15, 5, 15], // [top, left, bottom, right] - 15mm left/right
       html2canvas: {
-        scale: 0.2325, // 186mm / 800px = 0.2325
+        scale: 0.225, // 180mm / 800px = 0.225
         useCORS: true,
         logging: false,
         letterRendering: true,
