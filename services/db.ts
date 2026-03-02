@@ -83,13 +83,25 @@ export const DBService = {
 
   async saveDebtors(debtors: DebtorRecord[]): Promise<void> {
     try {
+      console.log(`[DBService] Saving ${debtors.length} debtors to server...`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
       const response = await fetch(`${API_BASE}/debtors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(debtors)
+        body: JSON.stringify(debtors),
+        signal: controller.signal
       });
-      if (!response.ok) throw new Error('Failed to save debtors');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DBService] Server error saving debtors: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Failed to save debtors: ${response.statusText}`);
+      }
       
+      console.log("[DBService] Debtors saved successfully");
       localStorage.setItem('kdb_debtors_fallback', JSON.stringify(debtors));
     } catch (error) {
       console.error("[DBService] saveDebtors error:", error);

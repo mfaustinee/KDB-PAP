@@ -33,7 +33,18 @@ const INITIAL_DEBTORS = [
 
 // Ensure data directory and files exist
 if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
+  console.log(`Creating directory: ${DATA_DIR}`);
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Test writability
+try {
+  const testFile = path.join(DATA_DIR, ".write-test");
+  fs.writeFileSync(testFile, "test");
+  fs.unlinkSync(testFile);
+  console.log(`Data directory ${DATA_DIR} is writable`);
+} catch (e) {
+  console.error(`CRITICAL: Data directory ${DATA_DIR} is NOT writable:`, e);
 }
 
 const ensureFile = (file: string, defaultData: any) => {
@@ -64,9 +75,14 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json({ limit: '50mb' }));
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
+
   app.get("/api/agreements", (req, res) => {
     console.log("GET /api/agreements");
     try {
@@ -149,12 +165,16 @@ async function startServer() {
       console.log("Debtor IDs:", req.body.map(d => d.id).join(", "));
     }
     try {
-      fs.writeFileSync(DEBTORS_FILE, JSON.stringify(req.body, null, 2));
-      console.log("Successfully wrote to debtors.json");
+      if (!req.body) {
+        throw new Error("Empty request body");
+      }
+      const dataStr = JSON.stringify(req.body, null, 2);
+      fs.writeFileSync(DEBTORS_FILE, dataStr);
+      console.log(`Successfully wrote ${dataStr.length} bytes to debtors.json`);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving debtors:", error);
-      res.status(500).json({ error: "Failed to save debtors" });
+      res.status(500).json({ error: `Failed to save debtors: ${error.message}` });
     }
   });
 

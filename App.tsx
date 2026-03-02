@@ -143,14 +143,23 @@ const App: React.FC = () => {
   };
 
   const handleDebtorUpdate = async (updated: DebtorRecord[]) => {
+    if (isSyncing) return;
     setIsSyncing(true);
     try {
+      // Check health first
+      try {
+        const health = await fetch('/api/health');
+        if (!health.ok) throw new Error("Server health check failed");
+      } catch (e) {
+        console.warn("Server health check failed, but proceeding anyway:", e);
+      }
+
       await DBService.saveDebtors(updated);
       setDebtors(updated);
       console.log("[App] Debtors updated successfully on server");
-    } catch (error) {
+    } catch (error: any) {
       console.error("[App] Failed to update debtors:", error);
-      alert("Failed to save changes to the server. Please check your connection and try again.");
+      alert(`Failed to save changes to the server: ${error.message || 'Unknown error'}. Please check your connection and try again.`);
       // Re-fetch to sync state with server
       const stored = await DBService.getDebtors();
       setDebtors(stored);
