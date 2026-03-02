@@ -96,9 +96,20 @@ export const DBService = {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[DBService] Server error saving debtors: ${response.status} ${response.statusText}`, errorText);
-        throw new Error(`Failed to save debtors: ${response.statusText}`);
+        let errorMsg = `Server error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch (e) {
+          // If not JSON, try text
+          const text = await response.text().catch(() => "");
+          if (text) errorMsg = `${errorMsg} - ${text.substring(0, 100)}`;
+        }
+        
+        console.error(`[DBService] ${errorMsg}`);
+        throw new Error(errorMsg);
       }
       
       console.log("[DBService] Debtors saved successfully");

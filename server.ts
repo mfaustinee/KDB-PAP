@@ -13,6 +13,21 @@ const AGREEMENTS_FILE = path.join(DATA_DIR, "agreements.json");
 const DEBTORS_FILE = path.join(DATA_DIR, "debtors.json");
 const STAFF_FILE = path.join(DATA_DIR, "staff.json");
 
+// In-memory logs for debugging
+const serverLogs: string[] = [];
+const addLog = (msg: string) => {
+  const log = `[${new Date().toISOString()}] ${msg}`;
+  console.log(log);
+  serverLogs.push(log);
+  if (serverLogs.length > 100) serverLogs.shift();
+};
+const addError = (msg: string, err?: any) => {
+  const log = `[${new Date().toISOString()}] ERROR: ${msg} ${err ? (err.message || JSON.stringify(err)) : ''}`;
+  console.error(log);
+  serverLogs.push(log);
+  if (serverLogs.length > 100) serverLogs.shift();
+};
+
 const INITIAL_DEBTORS = [
   {
     id: 'D001',
@@ -78,9 +93,29 @@ async function startServer() {
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
+  // Error handling middleware for body-parser
+  app.use((err: any, req: any, res: any, next: any) => {
+    if (err) {
+      console.error("Express Error:", err);
+      if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: "Payload too large. Please try smaller images." });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", time: new Date().toISOString() });
+    res.json({ status: "ok", time: new Date().toISOString(), logs: serverLogs.length });
+  });
+
+  app.get("/api/logs", (req, res) => {
+    res.send(`<html><body style="background:#111;color:#0f0;font-family:monospace;padding:20px">
+      <h1>Server Logs</h1>
+      <pre>${serverLogs.join('\n')}</pre>
+      <button onclick="location.reload()">Refresh</button>
+    </body></html>`);
   });
 
   app.get("/api/agreements", (req, res) => {
@@ -160,20 +195,17 @@ async function startServer() {
 
   app.post("/api/debtors", (req, res) => {
     const count = Array.isArray(req.body) ? req.body.length : 'not an array';
-    console.log(`POST /api/debtors - Count: ${count}`);
-    if (Array.isArray(req.body)) {
-      console.log("Debtor IDs:", req.body.map(d => d.id).join(", "));
-    }
+    addLog(`POST /api/debtors - Count: ${count}`);
     try {
-      if (!req.body) {
-        throw new Error("Empty request body");
+      if (!req.body || !Array.isArray(req.body)) {
+        throw new Error(`Invalid request body: expected array, got ${typeof req.body}`);
       }
       const dataStr = JSON.stringify(req.body, null, 2);
       fs.writeFileSync(DEBTORS_FILE, dataStr);
-      console.log(`Successfully wrote ${dataStr.length} bytes to debtors.json`);
+      addLog(`Successfully wrote ${dataStr.length} bytes to debtors.json`);
       res.json({ success: true });
     } catch (error: any) {
-      console.error("Error saving debtors:", error);
+      addError("Error saving debtors:", error);
       res.status(500).json({ error: `Failed to save debtors: ${error.message}` });
     }
   });

@@ -159,7 +159,8 @@ const App: React.FC = () => {
       console.log("[App] Debtors updated successfully on server");
     } catch (error: any) {
       console.error("[App] Failed to update debtors:", error);
-      alert(`Failed to save changes to the server: ${error.message || 'Unknown error'}. Please check your connection and try again.`);
+      const message = error.message || 'Unknown error';
+      alert(`SAVE FAILED: ${message}\n\nThis usually happens if the data is too large or the connection was interrupted. Please try again or contact support if the issue persists.`);
       // Re-fetch to sync state with server
       const stored = await DBService.getDebtors();
       setDebtors(stored);
@@ -223,6 +224,14 @@ const App: React.FC = () => {
                 </button>
               )}
 
+              {isAdminAuthenticated && (
+                <button 
+                  onClick={() => window.open('/api/logs', '_blank')}
+                  className="flex items-center px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-600 transition-all"
+                >
+                  Logs
+                </button>
+              )}
               {isAdminAuthenticated && (
                 <button 
                   onClick={handleAdminLogout}
