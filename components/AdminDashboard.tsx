@@ -118,55 +118,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
     setRejectionReason('');
   };
 
-  const handleAddDebtor = () => {
+  const [isSavingDebtor, setIsSavingDebtor] = useState(false);
+
+  const handleAddDebtor = async () => {
     if (!newDebtor.dboName || !newDebtor.permitNo || !newDebtor.totalArrears) {
       return alert("Please fill in all required fields.");
     }
 
-    const finalInstallments = newDebtor.installments || [];
-    const totalFromInst = finalInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
-    const totalArrears = totalFromInst || newDebtor.totalArrears || 0;
-    
-    const arrearsPeriod = finalInstallments.map(i => i.period).filter(Boolean).join(', ') || 'Current';
+    setIsSavingDebtor(true);
+    try {
+      const finalInstallments = newDebtor.installments || [];
+      const totalFromInst = finalInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
+      const totalArrears = totalFromInst || newDebtor.totalArrears || 0;
+      
+      const arrearsPeriod = finalInstallments.map(i => i.period).filter(Boolean).join(', ') || 'Current';
 
-    if (editingDebtorId) {
-      const updatedDebtors = debtors.map(d => d.id === editingDebtorId ? {
-        ...(newDebtor as DebtorRecord),
-        id: editingDebtorId,
-        totalArrears,
-        totalArrearsWords: numberToWords(totalArrears),
-        installments: finalInstallments,
-        arrearsPeriod
-      } : d);
-      onDebtorUpdate(updatedDebtors);
-    } else {
-      const id = `D${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
-      const debtor: DebtorRecord = {
-        ...(newDebtor as DebtorRecord),
-        id,
-        totalArrears,
-        arrearsBreakdown: finalInstallments.map((inst, i) => ({ id: String(i), month: inst.period, amount: inst.amount })),
-        totalArrearsWords: numberToWords(totalArrears),
-        arrearsPeriod,
-        installments: finalInstallments
-      };
-      onDebtorUpdate([...debtors, debtor]);
+      if (editingDebtorId) {
+        const updatedDebtors = debtors.map(d => d.id === editingDebtorId ? {
+          ...(newDebtor as DebtorRecord),
+          id: editingDebtorId,
+          totalArrears,
+          totalArrearsWords: numberToWords(totalArrears),
+          installments: finalInstallments,
+          arrearsPeriod
+        } : d);
+        await onDebtorUpdate(updatedDebtors);
+      } else {
+        const id = `D${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+        const debtor: DebtorRecord = {
+          ...(newDebtor as DebtorRecord),
+          id,
+          totalArrears,
+          arrearsBreakdown: finalInstallments.map((inst, i) => ({ id: String(i), month: inst.period, amount: inst.amount })),
+          totalArrearsWords: numberToWords(totalArrears),
+          arrearsPeriod,
+          installments: finalInstallments
+        };
+        await onDebtorUpdate([...debtors, debtor]);
+      }
+
+      setIsAddingDebtor(false);
+      setEditingDebtorId(null);
+      setNewDebtor({
+        dboName: '',
+        premiseName: '',
+        permitNo: '',
+        county: '',
+        location: '',
+        totalArrears: 0,
+        tel: '',
+        debitNoteNo: '',
+        arrearsBreakdown: [],
+        installments: [{ no: 1, period: '', dueDate: '', amount: 0 }]
+      });
+    } catch (error) {
+      console.error("Error in handleAddDebtor:", error);
+    } finally {
+      setIsSavingDebtor(false);
     }
-
-    setIsAddingDebtor(false);
-    setEditingDebtorId(null);
-    setNewDebtor({
-      dboName: '',
-      premiseName: '',
-      permitNo: '',
-      county: '',
-      location: '',
-      totalArrears: 0,
-      tel: '',
-      debitNoteNo: '',
-      arrearsBreakdown: [],
-      installments: [{ no: 1, period: '', dueDate: '', amount: 0 }]
-    });
   };
 
   const handleEditDebtor = (debtor: DebtorRecord) => {
@@ -265,8 +274,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                 </div>
               </div>
             </div>
-            <button onClick={handleAddDebtor} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs">
-              {editingDebtorId ? 'Update Ledger Entry' : 'Save to Ledger'}
+            <button 
+              disabled={isSavingDebtor}
+              onClick={handleAddDebtor} 
+              className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs flex items-center justify-center disabled:opacity-50"
+            >
+              {isSavingDebtor ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                editingDebtorId ? 'Update Ledger Entry' : 'Save to Ledger'
+              )}
             </button>
           </div>
         </div>

@@ -143,8 +143,20 @@ const App: React.FC = () => {
   };
 
   const handleDebtorUpdate = async (updated: DebtorRecord[]) => {
-    setDebtors(updated);
-    await DBService.saveDebtors(updated);
+    setIsSyncing(true);
+    try {
+      await DBService.saveDebtors(updated);
+      setDebtors(updated);
+      console.log("[App] Debtors updated successfully on server");
+    } catch (error) {
+      console.error("[App] Failed to update debtors:", error);
+      alert("Failed to save changes to the server. Please check your connection and try again.");
+      // Re-fetch to sync state with server
+      const stored = await DBService.getDebtors();
+      setDebtors(stored);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleStaffUpdate = async (config: StaffConfig) => {

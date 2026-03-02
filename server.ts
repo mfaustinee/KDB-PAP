@@ -37,8 +37,21 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const ensureFile = (file: string, defaultData: any) => {
-  if (!fs.existsSync(file) || fs.readFileSync(file, 'utf-8') === '[]' || fs.readFileSync(file, 'utf-8') === '') {
+  if (!fs.existsSync(file)) {
+    console.log(`Creating ${file} with initial data`);
     fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+  } else {
+    // Check if file is valid JSON and not empty
+    try {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (!content || content.trim() === '') {
+        console.log(`File ${file} is empty, resetting to default`);
+        fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+      }
+    } catch (e) {
+      console.error(`Error reading ${file}, resetting to default:`, e);
+      fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+    }
   }
 };
 
