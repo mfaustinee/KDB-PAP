@@ -13,19 +13,37 @@ const AGREEMENTS_FILE = path.join(DATA_DIR, "agreements.json");
 const DEBTORS_FILE = path.join(DATA_DIR, "debtors.json");
 const STAFF_FILE = path.join(DATA_DIR, "staff.json");
 
+const INITIAL_DEBTORS = [
+  {
+    id: 'D001',
+    dboName: 'Sunrise Dairy Ltd',
+    premiseName: 'Sunrise Main Depot',
+    permitNo: 'KDB/MB/0001/0001234/2024',
+    location: 'Thika Road, Ruiru',
+    county: 'Kiambu',
+    arrearsBreakdown: [{ id: '1', month: 'January 2024', amount: 150000 }],
+    totalArrears: 150000,
+    totalArrearsWords: 'One Hundred and Fifty Thousand Shillings',
+    arrearsPeriod: 'Jan 2024',
+    debitNoteNo: 'DN/2024/552',
+    tel: '0712345678',
+    installments: [{ no: 1, period: 'Jan 2024', dueDate: '', amount: 150000 }]
+  }
+];
+
 // Ensure data directory and files exist
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
 }
 
 const ensureFile = (file: string, defaultData: any) => {
-  if (!fs.existsSync(file)) {
+  if (!fs.existsSync(file) || fs.readFileSync(file, 'utf-8') === '[]' || fs.readFileSync(file, 'utf-8') === '') {
     fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
   }
 };
 
 ensureFile(AGREEMENTS_FILE, []);
-ensureFile(DEBTORS_FILE, []);
+ensureFile(DEBTORS_FILE, INITIAL_DEBTORS);
 ensureFile(STAFF_FILE, { officialSignature: "" });
 
 async function startServer() {
@@ -37,15 +55,18 @@ async function startServer() {
 
   // API Routes
   app.get("/api/agreements", (req, res) => {
+    console.log("GET /api/agreements");
     try {
       const data = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
       res.json(JSON.parse(data));
     } catch (error) {
+      console.error("Error reading agreements:", error);
       res.status(500).json({ error: "Failed to read agreements" });
     }
   });
 
   app.post("/api/agreements", (req, res) => {
+    console.log("POST /api/agreements", req.body?.id);
     try {
       const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
       const newAgreement = req.body;
@@ -60,6 +81,7 @@ async function startServer() {
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
       res.json({ success: true });
     } catch (error) {
+      console.error("Error saving agreement:", error);
       res.status(500).json({ error: "Failed to save agreement" });
     }
   });
@@ -97,19 +119,28 @@ async function startServer() {
   });
 
   app.get("/api/debtors", (req, res) => {
+    console.log("GET /api/debtors");
     try {
       const data = fs.readFileSync(DEBTORS_FILE, "utf-8");
       res.json(JSON.parse(data));
     } catch (error) {
+      console.error("Error reading debtors:", error);
       res.status(500).json({ error: "Failed to read debtors" });
     }
   });
 
   app.post("/api/debtors", (req, res) => {
+    const count = Array.isArray(req.body) ? req.body.length : 'not an array';
+    console.log(`POST /api/debtors - Count: ${count}`);
+    if (Array.isArray(req.body)) {
+      console.log("Debtor IDs:", req.body.map(d => d.id).join(", "));
+    }
     try {
       fs.writeFileSync(DEBTORS_FILE, JSON.stringify(req.body, null, 2));
+      console.log("Successfully wrote to debtors.json");
       res.json({ success: true });
     } catch (error) {
+      console.error("Error saving debtors:", error);
       res.status(500).json({ error: "Failed to save debtors" });
     }
   });
