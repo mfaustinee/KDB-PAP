@@ -87,10 +87,13 @@ export const DBService = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
+      const payload = JSON.stringify(debtors);
+      console.log(`[DBService] Payload size: ${payload.length} bytes`);
+
       const response = await fetch(`${API_BASE}/debtors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(debtors),
+        body: payload,
         signal: controller.signal
       });
       clearTimeout(timeoutId);
