@@ -152,6 +152,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
         await onDebtorUpdate([...debtors, debtor]);
       }
 
+    } catch (error: any) {
+      console.error("Error in handleAddDebtor:", error);
+      alert("Failed to save entry: " + error.message);
+    } finally {
+      setIsSavingDebtor(false);
       setIsAddingDebtor(false);
       setEditingDebtorId(null);
       setNewDebtor({
@@ -166,10 +171,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
         arrearsBreakdown: [],
         installments: [{ no: 1, period: '', dueDate: '', amount: 0 }]
       });
-    } catch (error) {
-      console.error("Error in handleAddDebtor:", error);
-    } finally {
-      setIsSavingDebtor(false);
     }
   };
 

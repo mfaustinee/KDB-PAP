@@ -8,7 +8,9 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.join(process.cwd(), "data");
+console.log(`[Server] Data directory set to: ${DATA_DIR}`);
+
 const AGREEMENTS_FILE = path.join(DATA_DIR, "agreements.json");
 const DEBTORS_FILE = path.join(DATA_DIR, "debtors.json");
 const STAFF_FILE = path.join(DATA_DIR, "staff.json");
@@ -49,18 +51,26 @@ try {
 
 const ensureFile = (file: string, defaultData: any) => {
   if (!fs.existsSync(file)) {
-    console.log(`Creating ${file} with initial data`);
+    console.log(`[Server] Creating ${file} with initial data`);
     fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
   } else {
     // Check if file is valid JSON and not empty
     try {
       const content = fs.readFileSync(file, 'utf-8');
-      if (!content || content.trim() === '') {
-        console.log(`File ${file} is empty, resetting to default`);
-        fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+      if (!content || content.trim() === '' || content === '[]') {
+        // Only reset if it's actually empty or just an empty array (if it's debtors)
+        if (file === DEBTORS_FILE && content === '[]') {
+           console.log(`[Server] File ${file} is empty array, resetting to INITIAL_DEBTORS`);
+           fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+           return;
+        }
+        if (!content || content.trim() === '') {
+          console.log(`[Server] File ${file} is empty, resetting to default`);
+          fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
+        }
       }
     } catch (e) {
-      console.error(`Error reading ${file}, resetting to default:`, e);
+      console.error(`[Server] Error reading ${file}, resetting to default:`, e);
       fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
     }
   }
@@ -69,6 +79,15 @@ const ensureFile = (file: string, defaultData: any) => {
 ensureFile(AGREEMENTS_FILE, []);
 ensureFile(DEBTORS_FILE, INITIAL_DEBTORS);
 ensureFile(STAFF_FILE, { officialSignature: "" });
+
+// Log initial counts
+try {
+  const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+  const debtors = JSON.parse(fs.readFileSync(DEBTORS_FILE, "utf-8"));
+  console.log(`[Server] Startup: ${agreements.length} agreements, ${debtors.length} debtors loaded from disk.`);
+} catch (e) {
+  console.error("[Server] Error reading files on startup:", e);
+}
 
 async function startServer() {
   const app = express();
@@ -109,13 +128,18 @@ async function startServer() {
 
   app.post("/api/debtors", (req, res) => {
     try {
-      if (!req.body || !Array.isArray(req.body)) throw new Error("Invalid body");
+      if (!req.body || !Array.isArray(req.body)) throw new Error("Invalid body: expected array");
       const dataStr = JSON.stringify(req.body, null, 2);
-      console.log(`[Server] Saving ${req.body.length} debtors to ${DEBTORS_FILE} (${dataStr.length} bytes)`);
+      console.log(`[Server] POST /api/debtors: Saving ${req.body.length} debtors to ${DEBTORS_FILE}`);
       fs.writeFileSync(DEBTORS_FILE, dataStr);
+      
+      // Verify write
+      const verify = fs.readFileSync(DEBTORS_FILE, "utf-8");
+      console.log(`[Server] Verify write: ${verify.length} bytes written`);
+      
       res.json({ success: true });
     } catch (error: any) {
-      console.error("POST /api/debtors error:", error);
+      console.error("[Server] POST /api/debtors error:", error);
       res.status(500).json({ error: error.message });
     }
   });

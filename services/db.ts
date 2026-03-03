@@ -24,7 +24,7 @@ export const DBService = {
 
     // 1. Try Local API first (Source of Truth for this session)
     try {
-      const response = await fetch(`${API_BASE}/agreements`);
+      const response = await fetch(`${API_BASE}/agreements?t=${Date.now()}`);
       if (response.ok) {
         agreements = await response.json();
         localStorage.setItem('kdb_agreements_fallback', JSON.stringify(agreements));
@@ -198,7 +198,7 @@ export const DBService = {
 
     // 1. Local API first
     try {
-      const response = await fetch(`${API_BASE}/debtors`);
+      const response = await fetch(`${API_BASE}/debtors?t=${Date.now()}`);
       if (response.ok) {
         debtors = await response.json();
         localStorage.setItem('kdb_debtors_fallback', JSON.stringify(debtors));
@@ -231,6 +231,7 @@ export const DBService = {
   },
 
   async saveDebtors(debtors: DebtorRecord[]): Promise<void> {
+    console.log(`[DBService] Saving ${debtors.length} debtors...`);
     // 1. Local API first
     try {
       const response = await fetch(`${API_BASE}/debtors`, {
@@ -238,17 +239,25 @@ export const DBService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(debtors)
       });
-      if (!response.ok) throw new Error('Failed to save debtors locally');
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Local save failed: ${errText}`);
+      }
+      console.log("[DBService] Local API saveDebtors success");
       localStorage.setItem('kdb_debtors_fallback', JSON.stringify(debtors));
     } catch (error) {
       console.error("[DBService] Local API saveDebtors error:", error);
-      throw error;
+      // Still save to localStorage even if API fails
+      localStorage.setItem('kdb_debtors_fallback', JSON.stringify(debtors));
+      // Don't rethrow if we have localStorage as backup, unless we want to alert user
     }
 
     // 2. Supabase background
     if (supabase) {
+      console.log("[DBService] Syncing debtors to Supabase...");
       supabase.from('debtors').upsert(debtors).then(({ error }) => {
         if (error) console.error("[DBService] Supabase saveDebtors background error:", error);
+        else console.log("[DBService] Supabase sync success");
       });
     }
   },
