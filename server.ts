@@ -98,6 +98,12 @@ async function startServer() {
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
+  // Request logging for API
+  app.use("/api", (req, res, next) => {
+    console.log(`[Server] API Request: ${req.method} ${req.url}`);
+    next();
+  });
+
   // Error handling middleware for body-parser
   app.use((err: any, req: any, res: any, next: any) => {
     if (err) {
