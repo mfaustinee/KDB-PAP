@@ -26,6 +26,27 @@ const App: React.FC = () => {
   useEffect(() => {
     console.log("[App] Version 1.0.5 - Initializing...");
     loadDatabase();
+
+    // Set up Realtime Subscriptions for multi-device sync
+    let agreementSub: any = null;
+    let debtorSub: any = null;
+
+    if (DBService.isCloudEnabled()) {
+      agreementSub = DBService.subscribeToAgreements((payload) => {
+        console.log("[App] Realtime Agreement Update received");
+        loadDatabase(); // Refresh everything on change
+      });
+
+      debtorSub = DBService.subscribeToDebtors((payload) => {
+        console.log("[App] Realtime Debtor Update received");
+        loadDatabase(); // Refresh everything on change
+      });
+    }
+
+    return () => {
+      if (agreementSub) agreementSub.unsubscribe();
+      if (debtorSub) debtorSub.unsubscribe();
+    };
   }, []);
 
   const handleAdminAccess = () => {

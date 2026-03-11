@@ -182,6 +182,32 @@ export const DBService = {
     if (debtors) await this.saveDebtors(debtors);
   },
 
+  subscribeToAgreements(callback: (payload: any) => void) {
+    if (!supabase) return null;
+    
+    console.log("[DBService] Subscribing to Realtime Agreements...");
+    return supabase
+      .channel('public:agreements')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agreements' }, (payload) => {
+        console.log("[DBService] Realtime Agreement Change:", payload.eventType);
+        callback(payload);
+      })
+      .subscribe();
+  },
+
+  subscribeToDebtors(callback: (payload: any) => void) {
+    if (!supabase) return null;
+    
+    console.log("[DBService] Subscribing to Realtime Debtors...");
+    return supabase
+      .channel('public:debtors')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'debtors' }, (payload) => {
+        console.log("[DBService] Realtime Debtor Change:", payload.eventType);
+        callback(payload);
+      })
+      .subscribe();
+  },
+
   async getDebtors(): Promise<DebtorRecord[]> {
     let debtors: DebtorRecord[] = [];
     const isCloud = this.isCloudEnabled();
