@@ -8,34 +8,10 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let DATA_DIR = path.join(process.cwd(), "data");
-
-// Resilient data directory selection
-const tryDataDir = (dir: string) => {
-  try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    const testFile = path.join(dir, ".write-test-" + Date.now());
-    fs.writeFileSync(testFile, "test");
-    fs.unlinkSync(testFile);
-    return true;
-  } catch (e) {
-    console.error(`[Server] Directory ${dir} is not writable:`, e);
-    return false;
-  }
-};
-
-if (!tryDataDir(DATA_DIR)) {
-  const fallbackDir = path.join("/tmp", "kdb-data");
-  console.warn(`[Server] Falling back to writable directory: ${fallbackDir}`);
-  DATA_DIR = fallbackDir;
-  if (!tryDataDir(DATA_DIR)) {
-    console.error("[Server] CRITICAL: No writable data directory found!");
-  }
+const DATA_DIR = path.join(process.cwd(), "data");
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
-
-console.log(`[Server] Active data directory: ${DATA_DIR}`);
 
 const AGREEMENTS_FILE = path.join(DATA_DIR, "agreements.json");
 const DEBTORS_FILE = path.join(DATA_DIR, "debtors.json");
@@ -61,28 +37,7 @@ const INITIAL_DEBTORS = [
 
 const ensureFile = (file: string, defaultData: any) => {
   if (!fs.existsSync(file)) {
-    console.log(`[Server] Creating ${file} with initial data`);
     fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
-  } else {
-    // Check if file is valid JSON and not empty
-    try {
-      const content = fs.readFileSync(file, 'utf-8');
-      if (!content || content.trim() === '' || content === '[]') {
-        // Only reset if it's actually empty or just an empty array (if it's debtors)
-        if (file === DEBTORS_FILE && content === '[]') {
-           console.log(`[Server] File ${file} is empty array, resetting to INITIAL_DEBTORS`);
-           fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
-           return;
-        }
-        if (!content || content.trim() === '') {
-          console.log(`[Server] File ${file} is empty, resetting to default`);
-          fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
-        }
-      }
-    } catch (e) {
-      console.error(`[Server] Error reading ${file}, resetting to default:`, e);
-      fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
-    }
   }
 };
 
@@ -90,237 +45,76 @@ ensureFile(AGREEMENTS_FILE, []);
 ensureFile(DEBTORS_FILE, INITIAL_DEBTORS);
 ensureFile(STAFF_FILE, { officialSignature: "" });
 
-// Log initial counts
-try {
-  const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
-  const debtors = JSON.parse(fs.readFileSync(DEBTORS_FILE, "utf-8"));
-  console.log(`[Server] Startup: ${agreements.length} agreements, ${debtors.length} debtors loaded from disk.`);
-} catch (e) {
-  console.error("[Server] Error reading files on startup:", e);
-}
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Improved CORS configuration
-  app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-  }));
-  app.options('*', cors()); 
-  
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ limit: '100mb', extended: true }));
-
-  // Detailed request logging for debugging 405/404 errors
-  app.use((req, res, next) => {
-    console.log(`[Server] ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-  });
-
-  // Error handling middleware for body-parser
-  app.use((err: any, req: any, res: any, next: any) => {
-    if (err) {
-      console.error("Express Error:", err);
-      if (err.type === 'entity.too.large') {
-        return res.status(413).json({ error: "Payload too large. Please try smaller images." });
-      }
-      return res.status(400).json({ error: err.message });
-    }
-    next();
-  });
+  app.use(cors());
+  app.use(express.json({ limit: '50mb' }));
 
   // API Routes
-  app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "ok", 
-      time: new Date().toISOString(),
-      writable: fs.existsSync(DATA_DIR) 
-    });
+  app.get("/api/agreements", (req, res) => {
+    const data = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
+    res.json(JSON.parse(data));
   });
 
-  app.get(["/api/debtors", "/api/debtors/"], (req, res) => {
-    try {
-      if (fs.existsSync(DEBTORS_FILE)) {
-        const data = fs.readFileSync(DEBTORS_FILE, "utf-8");
-        if (data && data.trim() !== '') {
-          return res.json(JSON.parse(data));
-        }
-      }
-      res.json(INITIAL_DEBTORS);
-    } catch (error) {
-      console.error("Error reading debtors:", error);
-      res.status(500).json({ error: "Failed to read debtors" });
-    }
+  app.post("/api/agreements", (req, res) => {
+    const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+    const newAgreement = req.body;
+    const index = agreements.findIndex((a: any) => a.id === newAgreement.id);
+    if (index !== -1) agreements[index] = newAgreement;
+    else agreements.push(newAgreement);
+    fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
+    res.json({ success: true });
   });
 
-  app.post(["/api/debtors", "/api/debtors/"], (req, res) => {
-    try {
-      if (!req.body || !Array.isArray(req.body)) throw new Error("Invalid body: expected array");
-      const dataStr = JSON.stringify(req.body, null, 2);
-      console.log(`[Server] POST /api/debtors: Saving ${req.body.length} debtors to ${DEBTORS_FILE}`);
-      fs.writeFileSync(DEBTORS_FILE, dataStr);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("[Server] POST /api/debtors error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get(["/api/agreements", "/api/agreements/"], (req, res) => {
-    try {
-      if (fs.existsSync(AGREEMENTS_FILE)) {
-        const data = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
-        return res.json(JSON.parse(data));
-      }
-      res.json([]);
-    } catch (error) {
-      console.error("Error reading agreements:", error);
-      res.status(500).json({ error: "Failed to read agreements" });
-    }
-  });
-
-  app.post(["/api/agreements", "/api/agreements/"], (req, res) => {
-    try {
-      let agreements = [];
-      if (fs.existsSync(AGREEMENTS_FILE)) {
-        const content = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
-        try {
-          agreements = content ? JSON.parse(content) : [];
-        } catch (e) {
-          console.error("[Server] Corrupted agreements.json, resetting to empty array");
-          agreements = [];
-        }
-      }
-      
-      const newAgreement = req.body;
-      if (!newAgreement || !newAgreement.id) {
-        return res.status(400).json({ error: "Invalid agreement data: missing ID" });
-      }
-      
-      const index = agreements.findIndex((a: any) => a.id === newAgreement.id);
-      if (index !== -1) {
-        agreements[index] = newAgreement;
-      } else {
-        agreements.push(newAgreement);
-      }
-      
-      fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
-      console.log(`[Server] Saved agreement ${newAgreement.id}. Total agreements: ${agreements.length}`);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("[Server] Error saving agreement:", error);
-      res.status(500).json({ error: `Failed to save agreement: ${error.message}` });
-    }
-  });
-
-  app.post(["/api/agreements/sync", "/api/agreements/sync/"], (req, res) => {
-    try {
-      const agreements = req.body;
-      if (!Array.isArray(agreements)) throw new Error("Invalid data format: expected array");
-      
-      fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
-      console.log(`[Server] Synced ${agreements.length} agreements from cloud to ${AGREEMENTS_FILE}`);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("[Server] Sync agreements error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Support both PATCH and POST for updates to avoid 405 errors in some environments
-  const handleUpdate = (req: any, res: any) => {
-    try {
-      const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
-      const { id } = req.params;
-      const updates = req.body;
-      
-      console.log(`[Server] Updating agreement ${id} via ${req.method}`);
-      
-      const index = agreements.findIndex((a: any) => a.id === id);
-      if (index !== -1) {
-        agreements[index] = { ...agreements[index], ...updates };
-        fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
-        res.json({ success: true });
-      } else {
-        res.status(404).json({ error: "Agreement not found" });
-      }
-    } catch (error) {
-      console.error("[Server] Update error:", error);
-      res.status(500).json({ error: "Failed to update agreement" });
-    }
-  };
-
-  app.patch(["/api/agreements/:id", "/api/agreements/:id/"], handleUpdate);
-  app.post(["/api/agreements/:id", "/api/agreements/:id/"], handleUpdate);
-
-  app.delete(["/api/agreements/:id", "/api/agreements/:id/"], (req, res) => {
-    try {
-      let agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
-      const { id } = req.params;
-      
-      agreements = agreements.filter((a: any) => a.id !== id);
+  app.patch("/api/agreements/:id", (req, res) => {
+    const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+    const { id } = req.params;
+    const index = agreements.findIndex((a: any) => a.id === id);
+    if (index !== -1) {
+      agreements[index] = { ...agreements[index], ...req.body };
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
       res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete agreement" });
+    } else {
+      res.status(404).json({ error: "Not found" });
     }
   });
 
-  app.get(["/api/staff", "/api/staff/"], (req, res) => {
-    try {
-      const data = fs.readFileSync(STAFF_FILE, "utf-8");
-      res.json(JSON.parse(data));
-    } catch (error) {
-      res.status(500).json({ error: "Failed to read staff config" });
-    }
+  app.delete("/api/agreements/:id", (req, res) => {
+    const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+    const { id } = req.params;
+    const filtered = agreements.filter((a: any) => a.id !== id);
+    fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(filtered, null, 2));
+    res.json({ success: true });
   });
 
-  app.post(["/api/staff", "/api/staff/"], (req, res) => {
-    try {
-      fs.writeFileSync(STAFF_FILE, JSON.stringify(req.body, null, 2));
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to save staff config" });
-    }
+  app.post("/api/agreements/sync", (req, res) => {
+    fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
   });
 
-  app.get("/api/status", (req, res) => {
-    try {
-      const agreements = fs.existsSync(AGREEMENTS_FILE) ? JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8")) : [];
-      const debtors = fs.existsSync(DEBTORS_FILE) ? JSON.parse(fs.readFileSync(DEBTORS_FILE, "utf-8")) : [];
-      res.json({
-        agreementsCount: agreements.length,
-        debtorsCount: debtors.length,
-        agreementsFile: AGREEMENTS_FILE,
-        debtorsFile: DEBTORS_FILE,
-        writable: fs.accessSync(DATA_DIR, fs.constants.W_OK) === undefined
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+  app.get("/api/debtors", (req, res) => {
+    const data = fs.readFileSync(DEBTORS_FILE, "utf-8");
+    res.json(JSON.parse(data));
   });
 
-  // API Catch-all with 405/404 handling
-  app.all("/api/*", (req, res) => {
-    const supportedMethods = ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'];
-    if (!supportedMethods.includes(req.method)) {
-      return res.status(405).json({ 
-        error: "Method Not Allowed", 
-        method: req.method,
-        path: req.url 
-      });
-    }
-    res.status(404).json({ 
-      error: "Not Found", 
-      message: `API endpoint ${req.method} ${req.url} not found`,
-      suggestion: "Check if you have a trailing slash mismatch or wrong ID"
-    });
+  app.post("/api/debtors", (req, res) => {
+    fs.writeFileSync(DEBTORS_FILE, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
   });
 
-  // Vite middleware for development
+  app.get("/api/staff", (req, res) => {
+    const data = fs.readFileSync(STAFF_FILE, "utf-8");
+    res.json(JSON.parse(data));
+  });
+
+  app.post("/api/staff", (req, res) => {
+    fs.writeFileSync(STAFF_FILE, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
+  });
+
+  // Vite middleware
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -328,7 +122,6 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Serve static files in production
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
