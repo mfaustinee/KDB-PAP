@@ -73,8 +73,12 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
       submittedAt: new Date().toISOString(),
     };
 
-    await new Promise(r => setTimeout(r, 1500));
-    onSubmit(requestData);
+    try {
+      await new Promise(r => setTimeout(r, 1500));
+      await onSubmit(requestData);
+    } catch (e) {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFinalSubmit = async () => {
@@ -86,12 +90,16 @@ export const AgreementForm: React.FC<AgreementFormProps> = ({ agreements, debtor
       'Finalizing transmission...'
     ];
 
-    for (const status of statuses) {
-      setTransmissionStatus(status);
-      await new Promise(r => setTimeout(r, 800));
+    try {
+      for (const status of statuses) {
+        setTransmissionStatus(status);
+        await new Promise(r => setTimeout(r, 800));
+      }
+      
+      await onSubmit(formData as AgreementData);
+    } catch (e) {
+      setIsSubmitting(false);
     }
-    
-    onSubmit(formData as AgreementData);
   };
 
   const isStep1Valid = formData.clientEmail && formData.tel && formData.location;

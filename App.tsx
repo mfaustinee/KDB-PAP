@@ -131,6 +131,7 @@ const App: React.FC = () => {
       console.error("Submission failed:", error);
       const msg = error.message || String(error);
       alert(`SUBMISSION ERROR:\n\n${msg}\n\nTechnical Details: Check the browser console (F12) for more information.`);
+      throw error; // Re-throw so AgreementForm can reset its state
     } finally {
       setIsSyncing(false);
     }

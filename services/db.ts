@@ -103,28 +103,32 @@ export const DBService = {
 
   async saveAgreement(agreement: AgreementData): Promise<void> {
     // 1. Local API first (Immediate)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     try {
       console.log(`[DBService] Attempting to save agreement ${agreement.id} locally...`);
       const response = await fetch(`${API_BASE}/agreements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(agreement)
+        body: JSON.stringify(agreement),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         let errorMsg = `HTTP ${response.status}`;
         try {
           const errorData = await response.json();
           errorMsg = errorData.error || errorMsg;
-        } catch (e) {
-          // Not JSON
-        }
+        } catch (e) {}
         throw new Error(errorMsg);
       }
       
       console.log("[DBService] Local save successful");
       
-      // Update local fallback immediately without waiting for full getAgreements
+      // Update local fallback immediately
       const local = localStorage.getItem('kdb_agreements_fallback');
       let agreements = local ? JSON.parse(local) : [];
       const index = agreements.findIndex((a: any) => a.id === agreement.id);
@@ -133,7 +137,11 @@ export const DBService = {
       localStorage.setItem('kdb_agreements_fallback', JSON.stringify(agreements));
       
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("[DBService] Local API saveAgreement error:", error);
+      if (error.name === 'AbortError') {
+        throw new Error("Connection timed out. The server is taking too long to respond.");
+      }
       throw new Error(`Local save failed: ${error.message || "Connection error"}`);
     }
 
@@ -142,9 +150,20 @@ export const DBService = {
       console.log("[DBService] Syncing to cloud in background...");
       (async () => {
         try {
-          const { error } = await supabase!.from('agreements').upsert(agreement);
-          if (error) console.error("[DBService] Supabase saveAgreement background error:", error.message);
-          else console.log("[DBService] Cloud sync successful");
+          // Use .insert() instead of .upsert() for better security
+          // This prevents public users from overwriting existing records
+          const { error } = await supabase!.from('agreements').insert(agreement);
+          
+          if (error) {
+            // If it already exists, we might need to update (though clients shouldn't usually do this)
+            if (error.code === '23505') { // Unique violation
+              console.warn("[DBService] Agreement already exists in cloud, skipping insert");
+            } else {
+              console.error("[DBService] Supabase saveAgreement background error:", error.message);
+            }
+          } else {
+            console.log("[DBService] Cloud sync successful");
+          }
         } catch (e) {
           console.error("[DBService] Supabase background exception:", e);
         }
@@ -154,13 +173,19 @@ export const DBService = {
 
   async updateAgreement(id: string, updates: Partial<AgreementData>): Promise<void> {
     // 1. Local API first (Immediate)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     try {
       console.log(`[DBService] Attempting to update agreement ${id} locally...`);
       const response = await fetch(`${API_BASE}/agreements/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         let errorMsg = `HTTP ${response.status}`;
@@ -184,7 +209,11 @@ export const DBService = {
         }
       }
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("[DBService] Local API updateAgreement error:", error);
+      if (error.name === 'AbortError') {
+        throw new Error("Connection timed out. The server is taking too long to respond.");
+      }
       throw new Error(`Local update failed: ${error.message || "Connection error"}`);
     }
 
