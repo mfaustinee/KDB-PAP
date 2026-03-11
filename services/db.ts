@@ -429,11 +429,25 @@ export const DBService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
-      if (!response.ok) throw new Error('Failed to save staff config');
+      
+      if (!response.ok) {
+        if (response.status === 405) {
+          console.warn("[DBService] POST /api/staff returned 405, retrying with trailing slash...");
+          const retryResponse = await fetch(`${API_BASE}/staff/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          if (!retryResponse.ok) throw new Error(`Retry failed: ${retryResponse.status}`);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      }
       
       localStorage.setItem('kdb_staff_fallback', JSON.stringify(config));
     } catch (error) {
       console.error("[DBService] Local API saveStaffConfig error:", error);
+      localStorage.setItem('kdb_staff_fallback', JSON.stringify(config));
       throw error;
     }
   }

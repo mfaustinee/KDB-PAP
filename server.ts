@@ -206,7 +206,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/agreements/sync", (req, res) => {
+  app.post(["/api/agreements/sync", "/api/agreements/sync/"], (req, res) => {
     try {
       const agreements = req.body;
       if (!Array.isArray(agreements)) throw new Error("Invalid data format: expected array");
@@ -259,7 +259,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/staff", (req, res) => {
+  app.get(["/api/staff", "/api/staff/"], (req, res) => {
     try {
       const data = fs.readFileSync(STAFF_FILE, "utf-8");
       res.json(JSON.parse(data));
@@ -268,7 +268,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/staff", (req, res) => {
+  app.post(["/api/staff", "/api/staff/"], (req, res) => {
     try {
       fs.writeFileSync(STAFF_FILE, JSON.stringify(req.body, null, 2));
       res.json({ success: true });
