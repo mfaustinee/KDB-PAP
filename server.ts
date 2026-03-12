@@ -40,6 +40,24 @@ console.log(`[Server] Active data directory: ${DATA_DIR}`);
 const AGREEMENTS_FILE = path.join(DATA_DIR, "agreements.json");
 const DEBTORS_FILE = path.join(DATA_DIR, "debtors.json");
 const STAFF_FILE = path.join(DATA_DIR, "staff.json");
+const LOG_FILE = path.join(DATA_DIR, "server.log");
+
+// Logging utility
+const logToFile = (message: string) => {
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${message}\n`;
+  console.log(logEntry.trim());
+  try {
+    fs.appendFileSync(LOG_FILE, logEntry);
+    // Keep log file small (last 1000 lines)
+    const logs = fs.readFileSync(LOG_FILE, 'utf-8').split('\n');
+    if (logs.length > 1000) {
+      fs.writeFileSync(LOG_FILE, logs.slice(-1000).join('\n'));
+    }
+  } catch (e) {
+    console.error("Failed to write to log file:", e);
+  }
+};
 
 const INITIAL_DEBTORS = [
   {
@@ -87,14 +105,12 @@ async function startServer() {
 
   // Detailed request logging
   app.use((req, res, next) => {
-    console.log(`[Server] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+    logToFile(`${req.method} ${req.url}`);
     next();
   });
 
-  // API Router
-  const apiRouter = express.Router();
-
-  apiRouter.get("/health", (req, res) => {
+  // API Routes (Directly on app for maximum reliability)
+  app.get("/api/health", (req, res) => {
     res.json({ 
       status: "ok", 
       time: new Date().toISOString(),
@@ -102,16 +118,29 @@ async function startServer() {
     });
   });
 
-  apiRouter.get("/agreements", (req, res) => {
+  app.get("/api/logs", (req, res) => {
+    try {
+      if (fs.existsSync(LOG_FILE)) {
+        res.type('text/plain').send(fs.readFileSync(LOG_FILE, 'utf-8'));
+      } else {
+        res.send("No logs found.");
+      }
+    } catch (e) {
+      res.status(500).send("Error reading logs");
+    }
+  });
+
+  app.get(["/api/agreements", "/api/agreements/"], (req, res) => {
     try {
       const data = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
       res.json(JSON.parse(data));
     } catch (error) {
+      logToFile(`Error reading agreements: ${error}`);
       res.status(500).json({ error: "Failed to read agreements" });
     }
   });
 
-  apiRouter.post("/agreements", (req, res) => {
+  app.post(["/api/agreements", "/api/agreements/"], (req, res) => {
     try {
       const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
       const newAgreement = req.body;
@@ -119,13 +148,15 @@ async function startServer() {
       if (index !== -1) agreements[index] = newAgreement;
       else agreements.push(newAgreement);
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
+      logToFile(`Saved agreement: ${newAgreement.id}`);
       res.json({ success: true });
     } catch (error) {
+      logToFile(`Error saving agreement: ${error}`);
       res.status(500).json({ error: "Failed to save agreement" });
     }
   });
 
-  apiRouter.patch("/agreements/:id", (req, res) => {
+  const handleUpdate = (req: any, res: any) => {
     try {
       const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
       const { id } = req.params;
@@ -133,55 +164,46 @@ async function startServer() {
       if (index !== -1) {
         agreements[index] = { ...agreements[index], ...req.body };
         fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
+        logToFile(`Updated agreement: ${id}`);
         res.json({ success: true });
       } else {
         res.status(404).json({ error: "Not found" });
       }
     } catch (error) {
+      logToFile(`Error updating agreement ${req.params.id}: ${error}`);
       res.status(500).json({ error: "Failed to update agreement" });
     }
-  });
+  };
 
-  // Support POST for updates too (fallback)
-  apiRouter.post("/agreements/:id", (req, res) => {
-    try {
-      const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
-      const { id } = req.params;
-      const index = agreements.findIndex((a: any) => a.id === id);
-      if (index !== -1) {
-        agreements[index] = { ...agreements[index], ...req.body };
-        fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreements, null, 2));
-        res.json({ success: true });
-      } else {
-        res.status(404).json({ error: "Not found" });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update agreement" });
-    }
-  });
+  app.patch(["/api/agreements/:id", "/api/agreements/:id/"], handleUpdate);
+  app.post(["/api/agreements/:id", "/api/agreements/:id/"], handleUpdate);
 
-  apiRouter.delete("/agreements/:id", (req, res) => {
+  app.delete(["/api/agreements/:id", "/api/agreements/:id/"], (req, res) => {
     try {
       const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
       const { id } = req.params;
       const filtered = agreements.filter((a: any) => a.id !== id);
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(filtered, null, 2));
+      logToFile(`Deleted agreement: ${id}`);
       res.json({ success: true });
     } catch (error) {
+      logToFile(`Error deleting agreement ${req.params.id}: ${error}`);
       res.status(500).json({ error: "Failed to delete agreement" });
     }
   });
 
-  apiRouter.post("/agreements/sync", (req, res) => {
+  app.post(["/api/agreements/sync", "/api/agreements/sync/"], (req, res) => {
     try {
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(req.body, null, 2));
+      logToFile(`Synced ${req.body.length} agreements`);
       res.json({ success: true });
     } catch (error) {
+      logToFile(`Error syncing agreements: ${error}`);
       res.status(500).json({ error: "Failed to sync agreements" });
     }
   });
 
-  apiRouter.get("/debtors", (req, res) => {
+  app.get(["/api/debtors", "/api/debtors/"], (req, res) => {
     try {
       const data = fs.readFileSync(DEBTORS_FILE, "utf-8");
       res.json(JSON.parse(data));
@@ -190,7 +212,7 @@ async function startServer() {
     }
   });
 
-  apiRouter.post("/debtors", (req, res) => {
+  app.post(["/api/debtors", "/api/debtors/"], (req, res) => {
     try {
       fs.writeFileSync(DEBTORS_FILE, JSON.stringify(req.body, null, 2));
       res.json({ success: true });
@@ -199,7 +221,7 @@ async function startServer() {
     }
   });
 
-  apiRouter.get("/staff", (req, res) => {
+  app.get(["/api/staff", "/api/staff/"], (req, res) => {
     try {
       const data = fs.readFileSync(STAFF_FILE, "utf-8");
       res.json(JSON.parse(data));
@@ -208,7 +230,7 @@ async function startServer() {
     }
   });
 
-  apiRouter.post("/staff", (req, res) => {
+  app.post(["/api/staff", "/api/staff/"], (req, res) => {
     try {
       fs.writeFileSync(STAFF_FILE, JSON.stringify(req.body, null, 2));
       res.json({ success: true });
@@ -217,7 +239,7 @@ async function startServer() {
     }
   });
 
-  apiRouter.get("/status", (req, res) => {
+  app.get("/api/status", (req, res) => {
     try {
       const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
       const debtors = JSON.parse(fs.readFileSync(DEBTORS_FILE, "utf-8"));
@@ -226,18 +248,17 @@ async function startServer() {
         debtorsCount: debtors.length,
         agreementsFile: AGREEMENTS_FILE,
         debtorsFile: DEBTORS_FILE,
-        writable: true
+        writable: true,
+        dataDir: DATA_DIR
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  // Mount API Router
-  app.use("/api", apiRouter);
-
-  // API Catch-all (must be after apiRouter)
+  // API Catch-all
   app.all("/api/*", (req, res) => {
+    logToFile(`API 404: ${req.method} ${req.url}`);
     res.status(404).json({ 
       error: "Not Found", 
       message: `API endpoint ${req.method} ${req.url} not found`,

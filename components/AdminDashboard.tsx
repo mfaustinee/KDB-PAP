@@ -32,6 +32,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddingDebtor, setIsAddingDebtor] = useState(false);
   const [editingDebtorId, setEditingDebtorId] = useState<string | null>(null);
+  const [serverLogs, setServerLogs] = useState<string>('');
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
+  const fetchLogs = async () => {
+    try {
+      const response = await fetch('/api/logs?t=' + Date.now());
+      const text = await response.text();
+      setServerLogs(text);
+    } catch (e) {
+      setServerLogs('Failed to fetch logs');
+    }
+  };
+
+  const checkHealth = async () => {
+    setIsTestingConnection(true);
+    try {
+      const response = await fetch('/api/health?t=' + Date.now());
+      const data = await response.json();
+      setSystemHealth(data);
+    } catch (e: any) {
+      setSystemHealth({ status: 'error', message: e.message });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'settings') {
+      fetchLogs();
+      checkHealth();
+    }
+  }, [tab]);
+
   const [newDebtor, setNewDebtor] = useState<Partial<DebtorRecord>>({
     dboName: '',
     premiseName: '',
@@ -709,6 +743,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ agreements, debt
                             {staffConfig.officialSignature ? 'Change Image' : 'Add Signature'}
                         </label>
                     </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                      <Server className="w-3 h-3 mr-2" /> System Diagnostics
+                    </h4>
+                    <button onClick={checkHealth} className="text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
+                      Refresh Status
+                    </button>
+                  </div>
+                  <div className="bg-slate-900 rounded-[32px] p-6 text-white space-y-4 shadow-xl">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">API Status</span>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${systemHealth?.status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                          <span className="text-xs font-bold">{systemHealth?.status === 'ok' ? 'Operational' : 'Error'}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest block">Local Storage</span>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${systemHealth?.writable ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                          <span className="text-xs font-bold">{systemHealth?.writable ? 'Writable' : 'Read-Only'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {systemHealth?.time && (
+                      <div className="text-[9px] text-slate-500 font-medium">Server Time: {new Date(systemHealth.time).toLocaleString()}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                      <Activity className="w-3 h-3 mr-2" /> Server Logs
+                    </h4>
+                    <button onClick={fetchLogs} className="text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
+                      Refresh Logs
+                    </button>
+                  </div>
+                  <div className="bg-slate-50 rounded-[32px] border border-slate-200 p-6 shadow-inner">
+                    <pre className="text-[10px] font-mono text-slate-600 overflow-y-auto max-h-40 whitespace-pre-wrap leading-relaxed">
+                      {serverLogs || 'No logs available.'}
+                    </pre>
+                  </div>
                 </div>
             </div>
           </div>
