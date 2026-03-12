@@ -77,18 +77,7 @@ export const DBService = {
   },
 
   async saveAgreement(agreement: AgreementData): Promise<void> {
-    const isCloud = this.isCloudEnabled();
-    let cloudSuccess = false;
-
-    // 1. Cloud Save FIRST
-    if (isCloud) {
-      try {
-        const { error } = await supabase!.from('agreements').insert(agreement);
-        if (!error || error.code === '23505') cloudSuccess = true;
-      } catch (e) {}
-    }
-
-    // 2. Local Save
+    // 1. Local Save FIRST (Blocking for UI feedback)
     try {
       const response = await fetch(`${API_BASE}/agreements`, {
         method: 'POST',
@@ -97,7 +86,6 @@ export const DBService = {
       });
       
       if (!response.ok && response.status === 405) {
-        // Retry with trailing slash
         await fetch(`${API_BASE}/agreements/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -105,7 +93,19 @@ export const DBService = {
         });
       }
     } catch (error) {
-      if (!cloudSuccess) throw error;
+      console.error("[DBService] Local save failed:", error);
+      // We continue to cloud sync even if local fails (e.g. server down)
+    }
+
+    // 2. Cloud Sync (NON-BLOCKING background task)
+    if (this.isCloudEnabled()) {
+      supabase!.from('agreements').insert(agreement).then(({ error }) => {
+        if (error && error.code !== '23505') {
+          console.error("[DBService] Background Cloud sync error:", error);
+        } else {
+          console.log("[DBService] Background Cloud sync successful");
+        }
+      });
     }
 
     // Update local fallback
@@ -118,18 +118,7 @@ export const DBService = {
   },
 
   async updateAgreement(id: string, updates: Partial<AgreementData>): Promise<void> {
-    const isCloud = this.isCloudEnabled();
-    let cloudSuccess = false;
-
-    // 1. Cloud Update FIRST
-    if (isCloud) {
-      try {
-        const { error } = await supabase!.from('agreements').update(updates).eq('id', id);
-        if (!error) cloudSuccess = true;
-      } catch (e) {}
-    }
-
-    // 2. Local Update
+    // 1. Local Update FIRST
     try {
       const response = await fetch(`${API_BASE}/agreements/${id}`, {
         method: 'PATCH',
@@ -145,7 +134,14 @@ export const DBService = {
         });
       }
     } catch (error) {
-      if (!cloudSuccess) throw error;
+      console.error("[DBService] Local update failed:", error);
+    }
+
+    // 2. Cloud Update (NON-BLOCKING)
+    if (this.isCloudEnabled()) {
+      supabase!.from('agreements').update(updates).eq('id', id).then(({ error }) => {
+        if (error) console.error("[DBService] Background Cloud update error:", error);
+      });
     }
 
     // Update local fallback
@@ -161,10 +157,16 @@ export const DBService = {
   },
 
   async deleteAgreement(id: string): Promise<void> {
-    if (supabase) {
-      await supabase.from('agreements').delete().eq('id', id);
-    }
+    // Local Delete
     await fetch(`${API_BASE}/agreements/${id}`, { method: 'DELETE' });
+    
+    // Cloud Delete (Background)
+    if (supabase) {
+      supabase.from('agreements').delete().eq('id', id).then(({ error }) => {
+        if (error) console.error("[DBService] Cloud delete error:", error);
+      });
+    }
+
     const local = localStorage.getItem('kdb_agreements_fallback');
     if (local) {
       let agreements = JSON.parse(local);
@@ -182,31 +184,7 @@ export const DBService = {
     if (debtors) await this.saveDebtors(debtors);
   },
 
-  subscribeToAgreements(callback: (payload: any) => void) {
-    if (!supabase) return null;
-    
-    console.log("[DBService] Subscribing to Realtime Agreements...");
-    return supabase
-      .channel('public:agreements')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agreements' }, (payload) => {
-        console.log("[DBService] Realtime Agreement Change:", payload.eventType);
-        callback(payload);
-      })
-      .subscribe();
-  },
-
-  subscribeToDebtors(callback: (payload: any) => void) {
-    if (!supabase) return null;
-    
-    console.log("[DBService] Subscribing to Realtime Debtors...");
-    return supabase
-      .channel('public:debtors')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'debtors' }, (payload) => {
-        console.log("[DBService] Realtime Debtor Change:", payload.eventType);
-        callback(payload);
-      })
-      .subscribe();
-  },
+  // Removed Realtime Subscriptions as per user request for performance
 
   async getDebtors(): Promise<DebtorRecord[]> {
     let debtors: DebtorRecord[] = [];

@@ -24,28 +24,22 @@ const App: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
 
   useEffect(() => {
-    console.log("[App] Version 1.0.5 - Initializing...");
+    console.log("[App] Version 1.0.6 - Initializing...");
     loadDatabase();
 
-    // Set up Realtime Subscriptions for multi-device sync
-    let agreementSub: any = null;
-    let debtorSub: any = null;
+    // Smart Polling for multi-device sync (every 60 seconds)
+    // This replaces Realtime to improve performance and stability
+    const pollInterval = setInterval(() => {
+      console.log("[App] Background sync: Checking for updates...");
+      loadDatabase();
+    }, 60000);
 
-    if (DBService.isCloudEnabled()) {
-      agreementSub = DBService.subscribeToAgreements((payload) => {
-        console.log("[App] Realtime Agreement Update received");
-        loadDatabase(); // Refresh everything on change
-      });
-
-      debtorSub = DBService.subscribeToDebtors((payload) => {
-        console.log("[App] Realtime Debtor Update received");
-        loadDatabase(); // Refresh everything on change
-      });
-    }
+    // Also sync when the user returns to the tab
+    window.addEventListener('focus', loadDatabase);
 
     return () => {
-      if (agreementSub) agreementSub.unsubscribe();
-      if (debtorSub) debtorSub.unsubscribe();
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', loadDatabase);
     };
   }, []);
 
