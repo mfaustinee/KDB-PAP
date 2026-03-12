@@ -177,11 +177,51 @@ export const DBService = {
 
   async forceSync(): Promise<void> {
     if (!supabase) throw new Error("Supabase not configured");
-    const { data: agreements } = await supabase.from('agreements').select('*');
-    const { data: debtors } = await supabase.from('debtors').select('*');
     
-    if (agreements) await this.syncAgreementsToLocal(agreements);
-    if (debtors) await this.saveDebtors(debtors);
+    console.log("[DBService] Starting Force Sync...");
+    
+    // 1. Pull from Cloud (Source of Truth)
+    const { data: cloudAgreements } = await supabase.from('agreements').select('*');
+    const { data: cloudDebtors } = await supabase.from('debtors').select('*');
+    
+    // 2. Sync Cloud -> Local
+    if (cloudAgreements) {
+      await this.syncAgreementsToLocal(cloudAgreements);
+      localStorage.setItem('kdb_agreements_fallback', JSON.stringify(cloudAgreements));
+    }
+    
+    if (cloudDebtors) {
+      await this.saveDebtors(cloudDebtors);
+      localStorage.setItem('kdb_debtors_fallback', JSON.stringify(cloudDebtors));
+    }
+
+    console.log("[DBService] Force Sync Complete");
+  },
+
+  async syncLocalToCloud(): Promise<void> {
+    if (!supabase) throw new Error("Supabase not configured");
+    
+    console.log("[DBService] Pushing local data to Cloud...");
+    
+    // Get local data
+    const agreementsRes = await fetch(`${API_BASE}/agreements`);
+    const debtorsRes = await fetch(`${API_BASE}/debtors`);
+    
+    if (agreementsRes.ok) {
+      const agreements = await agreementsRes.json();
+      if (agreements.length > 0) {
+        await supabase.from('agreements').upsert(agreements);
+      }
+    }
+    
+    if (debtorsRes.ok) {
+      const debtors = await debtorsRes.json();
+      if (debtors.length > 0) {
+        await supabase.from('debtors').upsert(debtors);
+      }
+    }
+    
+    console.log("[DBService] Local -> Cloud Push Complete");
   },
 
   // Removed Realtime Subscriptions as per user request for performance
