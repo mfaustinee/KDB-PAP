@@ -113,6 +113,18 @@ ensureFile(AGREEMENTS_FILE, []);
 ensureFile(DEBTORS_FILE, INITIAL_DEBTORS);
 ensureFile(STAFF_FILE, { officialSignature: "" });
 
+const readJSON = (file: string, defaultData: any) => {
+  try {
+    if (!fs.existsSync(file)) return defaultData;
+    const content = fs.readFileSync(file, "utf-8").trim();
+    if (!content) return defaultData;
+    return JSON.parse(content);
+  } catch (e) {
+    console.error(`Error reading/parsing ${file}:`, e);
+    return defaultData;
+  }
+};
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -139,7 +151,11 @@ async function startServer() {
     res.json({ 
       status: "ok", 
       time: new Date().toISOString(),
-      writable: fs.existsSync(DATA_DIR) 
+      env: process.env.NODE_ENV,
+      cwd: process.cwd(),
+      dataDir: DATA_DIR,
+      dataDirExists: fs.existsSync(DATA_DIR),
+      files: fs.existsSync(DATA_DIR) ? fs.readdirSync(DATA_DIR) : []
     });
   });
 
@@ -157,8 +173,8 @@ async function startServer() {
 
   app.get(["/api/agreements", "/api/agreements/"], (req, res) => {
     try {
-      const data = fs.readFileSync(AGREEMENTS_FILE, "utf-8");
-      res.json(JSON.parse(data));
+      const data = readJSON(AGREEMENTS_FILE, []);
+      res.json(data);
     } catch (error) {
       logToFile(`Error reading agreements: ${error}`);
       res.status(500).json({ error: "Failed to read agreements" });
@@ -167,7 +183,7 @@ async function startServer() {
 
   app.post(["/api/agreements", "/api/agreements/"], (req, res) => {
     try {
-      const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+      const agreements = readJSON(AGREEMENTS_FILE, []);
       const newAgreement = req.body;
       const index = agreements.findIndex((a: any) => a.id === newAgreement.id);
       if (index !== -1) agreements[index] = newAgreement;
@@ -183,7 +199,7 @@ async function startServer() {
 
   const handleUpdate = (req: any, res: any) => {
     try {
-      const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+      const agreements = readJSON(AGREEMENTS_FILE, []);
       const { id } = req.params;
       const index = agreements.findIndex((a: any) => a.id === id);
       if (index !== -1) {
@@ -205,7 +221,7 @@ async function startServer() {
 
   app.delete(["/api/agreements/:id", "/api/agreements/:id/"], (req, res) => {
     try {
-      const agreements = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, "utf-8"));
+      const agreements = readJSON(AGREEMENTS_FILE, []);
       const { id } = req.params;
       const filtered = agreements.filter((a: any) => a.id !== id);
       fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(filtered, null, 2));
@@ -230,8 +246,8 @@ async function startServer() {
 
   app.get(["/api/debtors", "/api/debtors/"], (req, res) => {
     try {
-      const data = fs.readFileSync(DEBTORS_FILE, "utf-8");
-      res.json(JSON.parse(data));
+      const data = readJSON(DEBTORS_FILE, INITIAL_DEBTORS);
+      res.json(data);
     } catch (error) {
       res.status(500).json({ error: "Failed to read debtors" });
     }

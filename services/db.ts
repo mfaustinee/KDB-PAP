@@ -210,13 +210,13 @@ export const DBService = {
     const { data: cloudAgreements } = await supabase.from('agreements').select('*');
     const { data: cloudDebtors } = await supabase.from('debtors').select('*');
     
-    // 2. Sync Cloud -> Local
-    if (cloudAgreements) {
+    // 2. Sync Cloud -> Local (Only if cloud has data to avoid wiping local)
+    if (cloudAgreements && cloudAgreements.length > 0) {
       await this.syncAgreementsToLocal(cloudAgreements);
       localStorage.setItem('kdb_agreements_fallback', JSON.stringify(cloudAgreements));
     }
     
-    if (cloudDebtors) {
+    if (cloudDebtors && cloudDebtors.length > 0) {
       await this.saveDebtors(cloudDebtors);
       localStorage.setItem('kdb_debtors_fallback', JSON.stringify(cloudDebtors));
     }
